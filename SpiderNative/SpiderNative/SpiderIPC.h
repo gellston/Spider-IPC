@@ -15,6 +15,17 @@
 
 namespace spider {
 
+
+	enum spider_mode {
+		create =0,
+		open,
+	};
+
+	enum spider_access {
+		read_only,
+		read_write
+	};
+
 	// pimple class
 	class spider_pimpl;
 
@@ -32,11 +43,12 @@ namespace spider {
 		unsigned int delay_time;
 		std::shared_ptr<spider_pimpl> pimpl;
 		unsigned int element_count;
+		spider::spider_access access;
 	public:
 
-		variable(std::string name);
-		variable(std::string name, unsigned int element_cout, unsigned int delay);
-		variable(std::string name, unsigned int delay);
+		variable(std::string name, spider_mode mode=spider_mode::create, spider_access access=spider::spider_access::read_write);
+		variable(std::string name, unsigned int element_cout, unsigned int delay, spider_mode mode = spider_mode::create, spider_access access = spider::spider_access::read_write);
+		variable(std::string name, unsigned int delay, spider_mode mode = spider_mode::create, spider_access access = spider::spider_access::read_write);
 		~variable();
 		void operator=(native_type data);
 		void operator>>(native_type&);
@@ -44,8 +56,6 @@ namespace spider {
 		spider::variable<native_type>& receive(native_type* data, unsigned int element_count);
 		spider::variable<native_type>& send(native_type* data, unsigned int element_count);
 	};
-
-
 
 	// template specialized class
 	#undef native_type
@@ -57,11 +67,12 @@ namespace spider {
 		unsigned int delay_time;
 		std::shared_ptr<spider_pimpl> pimpl;
 		unsigned int element_count;
+		spider::spider_access access;
 	public:
 
-		variable(std::string name);
-		variable(std::string name, unsigned int element_cout, unsigned int delay);
-		variable(std::string name, unsigned int delay);
+		variable(std::string name, spider_mode mode = spider_mode::create, spider_access access = spider::spider_access::read_write);
+		variable(std::string name, unsigned int element_cout, unsigned int delay, spider_mode mode = spider_mode::create, spider_access access = spider::spider_access::read_write);
+		variable(std::string name, unsigned int delay, spider_mode mode = spider_mode::create, spider_access access = spider::spider_access::read_write);
 		~variable();
 		void operator=(native_type data);
 		void operator>>(native_type&);
@@ -80,11 +91,12 @@ namespace spider {
 		unsigned int delay_time;
 		std::shared_ptr<spider_pimpl> pimpl;
 		unsigned int element_count;
+		spider::spider_access access;
 	public:
 
-		variable(std::string name);
-		variable(std::string name, unsigned int element_cout, unsigned int delay);
-		variable(std::string name, unsigned int delay);
+		variable(std::string name, spider_mode mode = spider_mode::create, spider_access access = spider::spider_access::read_write);
+		variable(std::string name, unsigned int element_cout, unsigned int delay, spider_mode mode = spider_mode::create, spider_access access = spider::spider_access::read_write);
+		variable(std::string name, unsigned int delay, spider_mode mode = spider_mode::create, spider_access access = spider::spider_access::read_write);
 		~variable();
 		void operator=(native_type data);
 		void operator>>(native_type&);
@@ -104,11 +116,12 @@ namespace spider {
 		unsigned int delay_time;
 		std::shared_ptr<spider_pimpl> pimpl;
 		unsigned int element_count;
+		spider::spider_access access;
 	public:
 
-		variable(std::string name);
-		variable(std::string name, unsigned int element_cout, unsigned int delay);
-		variable(std::string name, unsigned int delay);
+		variable(std::string name, spider_mode mode = spider_mode::create, spider_access access = spider::spider_access::read_write);
+		variable(std::string name, unsigned int element_cout, unsigned int delay, spider_mode mode = spider_mode::create, spider_access access = spider::spider_access::read_write);
+		variable(std::string name, unsigned int delay, spider_mode mode = spider_mode::create, spider_access access = spider::spider_access::read_write);
 		~variable();
 		void operator=(native_type data);
 		void operator>>(native_type&);
@@ -128,11 +141,12 @@ namespace spider {
 		unsigned int delay_time;
 		std::shared_ptr<spider_pimpl> pimpl;
 		unsigned int element_count;
+		spider::spider_access access;
 	public:
 
-		variable(std::string name);
-		variable(std::string name, unsigned int element_cout, unsigned int delay);
-		variable(std::string name, unsigned int delay);
+		variable(std::string name, spider_mode mode = spider_mode::create, spider_access access = spider::spider_access::read_write);
+		variable(std::string name, unsigned int element_cout, unsigned int delay, spider_mode mode = spider_mode::create, spider_access access = spider::spider_access::read_write);
+		variable(std::string name, unsigned int delay, spider_mode mode = spider_mode::create, spider_access access = spider::spider_access::read_write);
 		~variable();
 		void operator=(native_type data);
 		void operator>>(native_type&);
@@ -140,6 +154,10 @@ namespace spider {
 		spider::variable<native_type>& receive(native_type* data, unsigned int element_count);
 		spider::variable<native_type>& send(native_type* data, unsigned int element_count);
 	};
+
+
+	
+
 
 };
 

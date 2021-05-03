@@ -38,8 +38,8 @@ namespace spider {
 //Double variable
 #undef native_type
 #define native_type double
-spider::variable<native_type>::variable(std::string name) : instance(nullptr),
-													   pimpl(new spider_pimpl()){
+spider::variable<native_type>::variable(std::string name, spider_mode mode, spider_access access) : instance(nullptr),
+																								    pimpl(new spider_pimpl()){
 
 
 	if (name.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_") != std::string::npos)
@@ -53,6 +53,9 @@ spider::variable<native_type>::variable(std::string name) : instance(nullptr),
 
 	std::wstring unicode_write_event_name = unicode_name;
 	unicode_write_event_name += L"_write.event";
+
+	this->access = access;
+
 
 	this->pimpl->event_write_handle = CreateEvent(
 								     NULL,               // default security attributes
@@ -61,24 +64,43 @@ spider::variable<native_type>::variable(std::string name) : instance(nullptr),
 									 unicode_write_event_name.c_str()  // object name
 								     );
 
-	this->pimpl->shmem = ::CreateFileMapping(
-							INVALID_HANDLE_VALUE,
-							NULL,
-							PAGE_READWRITE,
-							0,
-							sizeof(native_type),
-		unicode_name.c_str()
-							);
+	switch (mode)
+	{
+	case spider::create:
+		this->pimpl->shmem = ::CreateFileMapping(
+								INVALID_HANDLE_VALUE,
+								NULL,
+								PAGE_READWRITE,
+								0,
+								sizeof(native_type),
+								unicode_name.c_str());
+		break;
+	case spider::open:
+		this->pimpl->shmem = ::OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, unicode_name.c_str());
+		break;
+	default:
+		throw std::exception("Invalid mode");
+		break;
+	}
+
+	if (this->pimpl->shmem == nullptr)
+		throw std::exception("Invalid shared memory handle");
 
 	this->instance = (native_type*)::MapViewOfFile(this->pimpl->shmem, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(native_type));
+
+	if (this->instance == nullptr) {
+		CloseHandle(this->pimpl->shmem);
+		throw std::exception("Invalid memory pointer");
+	}
+		
+
 	this->delay_time = 100;
 	this->element_count = 1;
 
 }
 
-spider::variable<native_type>::variable(std::string name, unsigned int element_count, unsigned int delay) : instance(nullptr),
-																							           pimpl(new spider_pimpl()) {
-
+spider::variable<native_type>::variable(std::string name, unsigned int element_count, unsigned int delay, spider_mode mode, spider_access access) : instance(nullptr),
+																																					pimpl(new spider_pimpl()) {
 	if (name.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_") != std::string::npos)
 	{
 		throw std::exception("The name contains special characters.");
@@ -87,8 +109,12 @@ spider::variable<native_type>::variable(std::string name, unsigned int element_c
 	std::wstring unicode_name;
 	unicode_name.assign(name.begin(), name.end());
 
+
 	std::wstring unicode_write_event_name = unicode_name;
 	unicode_write_event_name += L"_write.event";
+
+	this->access = access;
+
 
 	this->pimpl->event_write_handle = CreateEvent(
 		NULL,               // default security attributes
@@ -97,22 +123,42 @@ spider::variable<native_type>::variable(std::string name, unsigned int element_c
 		unicode_write_event_name.c_str()  // object name
 	);
 
-	this->pimpl->shmem = ::CreateFileMapping(
-		INVALID_HANDLE_VALUE,
-		NULL,
-		PAGE_READWRITE,
-		0,
-		sizeof(native_type) * element_count,
-		unicode_name.c_str()
-	);
+	switch (mode)
+	{
+	case spider::create:
+		this->pimpl->shmem = ::CreateFileMapping(
+			INVALID_HANDLE_VALUE,
+			NULL,
+			PAGE_READWRITE,
+			0,
+			sizeof(native_type) * element_count,
+			unicode_name.c_str());
+		break;
+	case spider::open:
+		this->pimpl->shmem = ::OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, unicode_name.c_str());
+		break;
+	default:
+		throw std::exception("Invalid mode");
+		break;
+	}
 
-	this->instance = (native_type*)::MapViewOfFile(this->pimpl->shmem, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(native_type));
+	if (this->pimpl->shmem == nullptr)
+		throw std::exception("Invalid shared memory handle");
+
+	this->instance = (native_type*)::MapViewOfFile(this->pimpl->shmem, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(native_type) * element_count);
+
+	if (this->instance == nullptr) {
+		CloseHandle(this->pimpl->shmem);
+		throw std::exception("Invalid memory pointer");
+	}
+
 	this->delay_time = delay;
 	this->element_count = element_count;
 }
 
-spider::variable<native_type>::variable(std::string name, unsigned int delay) : instance(nullptr),
-																		   pimpl(new spider_pimpl()) {
+spider::variable<native_type>::variable(std::string name, unsigned int delay, spider_mode mode, spider_access access) : instance(nullptr),
+																								  pimpl(new spider_pimpl()) {
+
 	if (name.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_") != std::string::npos)
 	{
 		throw std::exception("The name contains special characters.");
@@ -125,6 +171,9 @@ spider::variable<native_type>::variable(std::string name, unsigned int delay) : 
 	std::wstring unicode_write_event_name = unicode_name;
 	unicode_write_event_name += L"_write.event";
 
+	this->access = access;
+
+
 	this->pimpl->event_write_handle = CreateEvent(
 		NULL,               // default security attributes
 		TRUE,               // manual-reset event
@@ -132,28 +181,54 @@ spider::variable<native_type>::variable(std::string name, unsigned int delay) : 
 		unicode_write_event_name.c_str()  // object name
 	);
 
-	this->pimpl->shmem = ::CreateFileMapping(
-		INVALID_HANDLE_VALUE,
-		NULL,
-		PAGE_READWRITE,
-		0,
-		sizeof(native_type),
-		unicode_name.c_str()
-	);
+	switch (mode)
+	{
+	case spider::create:
+		this->pimpl->shmem = ::CreateFileMapping(
+			INVALID_HANDLE_VALUE,
+			NULL,
+			PAGE_READWRITE,
+			0,
+			sizeof(native_type),
+			unicode_name.c_str());
+		break;
+	case spider::open:
+		this->pimpl->shmem = ::OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, unicode_name.c_str());
+		break;
+	default:
+		throw std::exception("Invalid mode");
+		break;
+	}
+
+	if (this->pimpl->shmem == nullptr)
+		throw std::exception("Invalid shared memory handle");
 
 	this->instance = (native_type*)::MapViewOfFile(this->pimpl->shmem, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(native_type));
+
+	if (this->instance == nullptr) {
+		CloseHandle(this->pimpl->shmem);
+		throw std::exception("Invalid memory pointer");
+	}
+
 	this->delay_time = delay;
 	this->element_count = 1;
 }
 
 spider::variable<native_type>::~variable() {
-	::UnmapViewOfFile(this->instance);
-	::CloseHandle(this->pimpl->shmem);
-	CloseHandle(this->pimpl->event_write_handle);
-	CloseHandle(this->pimpl->event_read_handle);
+	if(this->instance)
+		::UnmapViewOfFile(this->instance);
+	if (this->pimpl->shmem)
+		::CloseHandle(this->pimpl->shmem);
+	if (this->pimpl->event_write_handle)
+		CloseHandle(this->pimpl->event_write_handle);
+	if (this->pimpl->event_read_handle)
+		CloseHandle(this->pimpl->event_read_handle);
 }
 
 void spider::variable<native_type>::operator=(native_type data) {
+
+	if (this->access == spider_access::read_only)
+		throw std::exception("Proteced memory");
 
 	spider_raii raii([&] {
 		SetEvent(this->pimpl->event_write_handle);
@@ -230,6 +305,10 @@ spider::variable<native_type>& spider::variable<native_type>::receive(native_typ
 }
 
 spider::variable<native_type>& spider::variable<native_type>::send(native_type* data, unsigned int element_count) {
+
+	if (this->access == spider_access::read_only)
+		throw std::exception("Proected memory");
+
 	DWORD write_handle_ret = WaitForSingleObject(this->pimpl->event_write_handle, this->delay_time);
 
 	unsigned int source_count = this->element_count;
@@ -265,7 +344,7 @@ spider::variable<native_type>& spider::variable<native_type>::send(native_type* 
 //Int variable
 #undef native_type
 #define native_type int
-spider::variable<native_type>::variable(std::string name) : instance(nullptr),
+spider::variable<native_type>::variable(std::string name, spider_mode mode, spider_access access) : instance(nullptr),
 pimpl(new spider_pimpl()) {
 
 
@@ -281,6 +360,9 @@ pimpl(new spider_pimpl()) {
 	std::wstring unicode_write_event_name = unicode_name;
 	unicode_write_event_name += L"_write.event";
 
+	this->access = access;
+
+
 	this->pimpl->event_write_handle = CreateEvent(
 		NULL,               // default security attributes
 		TRUE,               // manual-reset event
@@ -288,24 +370,43 @@ pimpl(new spider_pimpl()) {
 		unicode_write_event_name.c_str()  // object name
 	);
 
-	this->pimpl->shmem = ::CreateFileMapping(
-		INVALID_HANDLE_VALUE,
-		NULL,
-		PAGE_READWRITE,
-		0,
-		sizeof(native_type),
-		unicode_name.c_str()
-	);
+	switch (mode)
+	{
+	case spider::create:
+		this->pimpl->shmem = ::CreateFileMapping(
+			INVALID_HANDLE_VALUE,
+			NULL,
+			PAGE_READWRITE,
+			0,
+			sizeof(native_type),
+			unicode_name.c_str());
+		break;
+	case spider::open:
+		this->pimpl->shmem = ::OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, unicode_name.c_str());
+		break;
+	default:
+		throw std::exception("Invalid mode");
+		break;
+	}
+
+	if (this->pimpl->shmem == nullptr)
+		throw std::exception("Invalid shared memory handle");
 
 	this->instance = (native_type*)::MapViewOfFile(this->pimpl->shmem, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(native_type));
+
+	if (this->instance == nullptr) {
+		CloseHandle(this->pimpl->shmem);
+		throw std::exception("Invalid memory pointer");
+	}
+
+
 	this->delay_time = 100;
 	this->element_count = 1;
 
 }
 
-spider::variable<native_type>::variable(std::string name, unsigned int element_count, unsigned int delay) : instance(nullptr),
+spider::variable<native_type>::variable(std::string name, unsigned int element_count, unsigned int delay, spider_mode mode, spider_access access) : instance(nullptr),
 pimpl(new spider_pimpl()) {
-
 	if (name.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_") != std::string::npos)
 	{
 		throw std::exception("The name contains special characters.");
@@ -314,8 +415,12 @@ pimpl(new spider_pimpl()) {
 	std::wstring unicode_name;
 	unicode_name.assign(name.begin(), name.end());
 
+
 	std::wstring unicode_write_event_name = unicode_name;
 	unicode_write_event_name += L"_write.event";
+
+	this->access = access;
+
 
 	this->pimpl->event_write_handle = CreateEvent(
 		NULL,               // default security attributes
@@ -324,22 +429,42 @@ pimpl(new spider_pimpl()) {
 		unicode_write_event_name.c_str()  // object name
 	);
 
-	this->pimpl->shmem = ::CreateFileMapping(
-		INVALID_HANDLE_VALUE,
-		NULL,
-		PAGE_READWRITE,
-		0,
-		sizeof(native_type) * element_count,
-		unicode_name.c_str()
-	);
+	switch (mode)
+	{
+	case spider::create:
+		this->pimpl->shmem = ::CreateFileMapping(
+			INVALID_HANDLE_VALUE,
+			NULL,
+			PAGE_READWRITE,
+			0,
+			sizeof(native_type) * element_count,
+			unicode_name.c_str());
+		break;
+	case spider::open:
+		this->pimpl->shmem = ::OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, unicode_name.c_str());
+		break;
+	default:
+		throw std::exception("Invalid mode");
+		break;
+	}
 
-	this->instance = (native_type*)::MapViewOfFile(this->pimpl->shmem, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(native_type));
+	if (this->pimpl->shmem == nullptr)
+		throw std::exception("Invalid shared memory handle");
+
+	this->instance = (native_type*)::MapViewOfFile(this->pimpl->shmem, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(native_type) * element_count);
+
+	if (this->instance == nullptr) {
+		CloseHandle(this->pimpl->shmem);
+		throw std::exception("Invalid memory pointer");
+	}
+
 	this->delay_time = delay;
 	this->element_count = element_count;
 }
 
-spider::variable<native_type>::variable(std::string name, unsigned int delay) : instance(nullptr),
+spider::variable<native_type>::variable(std::string name, unsigned int delay, spider_mode mode, spider_access access) : instance(nullptr),
 pimpl(new spider_pimpl()) {
+
 	if (name.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_") != std::string::npos)
 	{
 		throw std::exception("The name contains special characters.");
@@ -352,6 +477,9 @@ pimpl(new spider_pimpl()) {
 	std::wstring unicode_write_event_name = unicode_name;
 	unicode_write_event_name += L"_write.event";
 
+	this->access = access;
+
+
 	this->pimpl->event_write_handle = CreateEvent(
 		NULL,               // default security attributes
 		TRUE,               // manual-reset event
@@ -359,28 +487,54 @@ pimpl(new spider_pimpl()) {
 		unicode_write_event_name.c_str()  // object name
 	);
 
-	this->pimpl->shmem = ::CreateFileMapping(
-		INVALID_HANDLE_VALUE,
-		NULL,
-		PAGE_READWRITE,
-		0,
-		sizeof(native_type),
-		unicode_name.c_str()
-	);
+	switch (mode)
+	{
+	case spider::create:
+		this->pimpl->shmem = ::CreateFileMapping(
+			INVALID_HANDLE_VALUE,
+			NULL,
+			PAGE_READWRITE,
+			0,
+			sizeof(native_type),
+			unicode_name.c_str());
+		break;
+	case spider::open:
+		this->pimpl->shmem = ::OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, unicode_name.c_str());
+		break;
+	default:
+		throw std::exception("Invalid mode");
+		break;
+	}
+
+	if (this->pimpl->shmem == nullptr)
+		throw std::exception("Invalid shared memory handle");
 
 	this->instance = (native_type*)::MapViewOfFile(this->pimpl->shmem, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(native_type));
+
+	if (this->instance == nullptr) {
+		CloseHandle(this->pimpl->shmem);
+		throw std::exception("Invalid memory pointer");
+	}
+
 	this->delay_time = delay;
 	this->element_count = 1;
 }
 
 spider::variable<native_type>::~variable() {
-	::UnmapViewOfFile(this->instance);
-	::CloseHandle(this->pimpl->shmem);
-	CloseHandle(this->pimpl->event_write_handle);
-	CloseHandle(this->pimpl->event_read_handle);
+	if (this->instance)
+		::UnmapViewOfFile(this->instance);
+	if (this->pimpl->shmem)
+		::CloseHandle(this->pimpl->shmem);
+	if (this->pimpl->event_write_handle)
+		CloseHandle(this->pimpl->event_write_handle);
+	if (this->pimpl->event_read_handle)
+		CloseHandle(this->pimpl->event_read_handle);
 }
 
 void spider::variable<native_type>::operator=(native_type data) {
+
+	if (this->access == spider_access::read_only)
+		throw std::exception("Proteced memory");
 
 	spider_raii raii([&] {
 		SetEvent(this->pimpl->event_write_handle);
@@ -457,6 +611,10 @@ spider::variable<native_type>& spider::variable<native_type>::receive(native_typ
 }
 
 spider::variable<native_type>& spider::variable<native_type>::send(native_type* data, unsigned int element_count) {
+
+	if (this->access == spider_access::read_only)
+		throw std::exception("Proected memory");
+
 	DWORD write_handle_ret = WaitForSingleObject(this->pimpl->event_write_handle, this->delay_time);
 
 	unsigned int source_count = this->element_count;
@@ -483,14 +641,12 @@ spider::variable<native_type>& spider::variable<native_type>::send(native_type* 
 	}
 	return (*this);
 }
-
-
 
 
 //Unsigned int variable
 #undef native_type
 #define native_type unsigned int
-spider::variable<native_type>::variable(std::string name) : instance(nullptr),
+spider::variable<native_type>::variable(std::string name, spider_mode mode, spider_access access) : instance(nullptr),
 pimpl(new spider_pimpl()) {
 
 
@@ -506,6 +662,9 @@ pimpl(new spider_pimpl()) {
 	std::wstring unicode_write_event_name = unicode_name;
 	unicode_write_event_name += L"_write.event";
 
+	this->access = access;
+
+
 	this->pimpl->event_write_handle = CreateEvent(
 		NULL,               // default security attributes
 		TRUE,               // manual-reset event
@@ -513,24 +672,43 @@ pimpl(new spider_pimpl()) {
 		unicode_write_event_name.c_str()  // object name
 	);
 
-	this->pimpl->shmem = ::CreateFileMapping(
-		INVALID_HANDLE_VALUE,
-		NULL,
-		PAGE_READWRITE,
-		0,
-		sizeof(native_type),
-		unicode_name.c_str()
-	);
+	switch (mode)
+	{
+	case spider::create:
+		this->pimpl->shmem = ::CreateFileMapping(
+			INVALID_HANDLE_VALUE,
+			NULL,
+			PAGE_READWRITE,
+			0,
+			sizeof(native_type),
+			unicode_name.c_str());
+		break;
+	case spider::open:
+		this->pimpl->shmem = ::OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, unicode_name.c_str());
+		break;
+	default:
+		throw std::exception("Invalid mode");
+		break;
+	}
+
+	if (this->pimpl->shmem == nullptr)
+		throw std::exception("Invalid shared memory handle");
 
 	this->instance = (native_type*)::MapViewOfFile(this->pimpl->shmem, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(native_type));
+
+	if (this->instance == nullptr) {
+		CloseHandle(this->pimpl->shmem);
+		throw std::exception("Invalid memory pointer");
+	}
+
+
 	this->delay_time = 100;
 	this->element_count = 1;
 
 }
 
-spider::variable<native_type>::variable(std::string name, unsigned int element_count, unsigned int delay) : instance(nullptr),
+spider::variable<native_type>::variable(std::string name, unsigned int element_count, unsigned int delay, spider_mode mode, spider_access access) : instance(nullptr),
 pimpl(new spider_pimpl()) {
-
 	if (name.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_") != std::string::npos)
 	{
 		throw std::exception("The name contains special characters.");
@@ -539,8 +717,12 @@ pimpl(new spider_pimpl()) {
 	std::wstring unicode_name;
 	unicode_name.assign(name.begin(), name.end());
 
+
 	std::wstring unicode_write_event_name = unicode_name;
 	unicode_write_event_name += L"_write.event";
+
+	this->access = access;
+
 
 	this->pimpl->event_write_handle = CreateEvent(
 		NULL,               // default security attributes
@@ -549,22 +731,42 @@ pimpl(new spider_pimpl()) {
 		unicode_write_event_name.c_str()  // object name
 	);
 
-	this->pimpl->shmem = ::CreateFileMapping(
-		INVALID_HANDLE_VALUE,
-		NULL,
-		PAGE_READWRITE,
-		0,
-		sizeof(native_type) * element_count,
-		unicode_name.c_str()
-	);
+	switch (mode)
+	{
+	case spider::create:
+		this->pimpl->shmem = ::CreateFileMapping(
+			INVALID_HANDLE_VALUE,
+			NULL,
+			PAGE_READWRITE,
+			0,
+			sizeof(native_type) * element_count,
+			unicode_name.c_str());
+		break;
+	case spider::open:
+		this->pimpl->shmem = ::OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, unicode_name.c_str());
+		break;
+	default:
+		throw std::exception("Invalid mode");
+		break;
+	}
 
-	this->instance = (native_type*)::MapViewOfFile(this->pimpl->shmem, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(native_type));
+	if (this->pimpl->shmem == nullptr)
+		throw std::exception("Invalid shared memory handle");
+
+	this->instance = (native_type*)::MapViewOfFile(this->pimpl->shmem, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(native_type) * element_count);
+
+	if (this->instance == nullptr) {
+		CloseHandle(this->pimpl->shmem);
+		throw std::exception("Invalid memory pointer");
+	}
+
 	this->delay_time = delay;
 	this->element_count = element_count;
 }
 
-spider::variable<native_type>::variable(std::string name, unsigned int delay) : instance(nullptr),
+spider::variable<native_type>::variable(std::string name, unsigned int delay, spider_mode mode, spider_access access) : instance(nullptr),
 pimpl(new spider_pimpl()) {
+
 	if (name.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_") != std::string::npos)
 	{
 		throw std::exception("The name contains special characters.");
@@ -577,6 +779,9 @@ pimpl(new spider_pimpl()) {
 	std::wstring unicode_write_event_name = unicode_name;
 	unicode_write_event_name += L"_write.event";
 
+	this->access = access;
+
+
 	this->pimpl->event_write_handle = CreateEvent(
 		NULL,               // default security attributes
 		TRUE,               // manual-reset event
@@ -584,28 +789,54 @@ pimpl(new spider_pimpl()) {
 		unicode_write_event_name.c_str()  // object name
 	);
 
-	this->pimpl->shmem = ::CreateFileMapping(
-		INVALID_HANDLE_VALUE,
-		NULL,
-		PAGE_READWRITE,
-		0,
-		sizeof(native_type),
-		unicode_name.c_str()
-	);
+	switch (mode)
+	{
+	case spider::create:
+		this->pimpl->shmem = ::CreateFileMapping(
+			INVALID_HANDLE_VALUE,
+			NULL,
+			PAGE_READWRITE,
+			0,
+			sizeof(native_type),
+			unicode_name.c_str());
+		break;
+	case spider::open:
+		this->pimpl->shmem = ::OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, unicode_name.c_str());
+		break;
+	default:
+		throw std::exception("Invalid mode");
+		break;
+	}
+
+	if (this->pimpl->shmem == nullptr)
+		throw std::exception("Invalid shared memory handle");
 
 	this->instance = (native_type*)::MapViewOfFile(this->pimpl->shmem, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(native_type));
+
+	if (this->instance == nullptr) {
+		CloseHandle(this->pimpl->shmem);
+		throw std::exception("Invalid memory pointer");
+	}
+
 	this->delay_time = delay;
 	this->element_count = 1;
 }
 
 spider::variable<native_type>::~variable() {
-	::UnmapViewOfFile(this->instance);
-	::CloseHandle(this->pimpl->shmem);
-	CloseHandle(this->pimpl->event_write_handle);
-	CloseHandle(this->pimpl->event_read_handle);
+	if (this->instance)
+		::UnmapViewOfFile(this->instance);
+	if (this->pimpl->shmem)
+		::CloseHandle(this->pimpl->shmem);
+	if (this->pimpl->event_write_handle)
+		CloseHandle(this->pimpl->event_write_handle);
+	if (this->pimpl->event_read_handle)
+		CloseHandle(this->pimpl->event_read_handle);
 }
 
 void spider::variable<native_type>::operator=(native_type data) {
+
+	if (this->access == spider_access::read_only)
+		throw std::exception("Proteced memory");
 
 	spider_raii raii([&] {
 		SetEvent(this->pimpl->event_write_handle);
@@ -682,6 +913,10 @@ spider::variable<native_type>& spider::variable<native_type>::receive(native_typ
 }
 
 spider::variable<native_type>& spider::variable<native_type>::send(native_type* data, unsigned int element_count) {
+
+	if (this->access == spider_access::read_only)
+		throw std::exception("Proected memory");
+
 	DWORD write_handle_ret = WaitForSingleObject(this->pimpl->event_write_handle, this->delay_time);
 
 	unsigned int source_count = this->element_count;
@@ -708,8 +943,6 @@ spider::variable<native_type>& spider::variable<native_type>::send(native_type* 
 	}
 	return (*this);
 }
-
-
 
 
 
@@ -718,7 +951,7 @@ spider::variable<native_type>& spider::variable<native_type>::send(native_type* 
 //unsigned Char variable
 #undef native_type
 #define native_type unsigned char
-spider::variable<native_type>::variable(std::string name) : instance(nullptr),
+spider::variable<native_type>::variable(std::string name, spider_mode mode, spider_access access) : instance(nullptr),
 pimpl(new spider_pimpl()) {
 
 
@@ -734,6 +967,9 @@ pimpl(new spider_pimpl()) {
 	std::wstring unicode_write_event_name = unicode_name;
 	unicode_write_event_name += L"_write.event";
 
+	this->access = access;
+
+
 	this->pimpl->event_write_handle = CreateEvent(
 		NULL,               // default security attributes
 		TRUE,               // manual-reset event
@@ -741,24 +977,43 @@ pimpl(new spider_pimpl()) {
 		unicode_write_event_name.c_str()  // object name
 	);
 
-	this->pimpl->shmem = ::CreateFileMapping(
-		INVALID_HANDLE_VALUE,
-		NULL,
-		PAGE_READWRITE,
-		0,
-		sizeof(native_type),
-		unicode_name.c_str()
-	);
+	switch (mode)
+	{
+	case spider::create:
+		this->pimpl->shmem = ::CreateFileMapping(
+			INVALID_HANDLE_VALUE,
+			NULL,
+			PAGE_READWRITE,
+			0,
+			sizeof(native_type),
+			unicode_name.c_str());
+		break;
+	case spider::open:
+		this->pimpl->shmem = ::OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, unicode_name.c_str());
+		break;
+	default:
+		throw std::exception("Invalid mode");
+		break;
+	}
+
+	if (this->pimpl->shmem == nullptr)
+		throw std::exception("Invalid shared memory handle");
 
 	this->instance = (native_type*)::MapViewOfFile(this->pimpl->shmem, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(native_type));
+
+	if (this->instance == nullptr) {
+		CloseHandle(this->pimpl->shmem);
+		throw std::exception("Invalid memory pointer");
+	}
+
+
 	this->delay_time = 100;
 	this->element_count = 1;
 
 }
 
-spider::variable<native_type>::variable(std::string name, unsigned int element_count, unsigned int delay) : instance(nullptr),
+spider::variable<native_type>::variable(std::string name, unsigned int element_count, unsigned int delay, spider_mode mode, spider_access access) : instance(nullptr),
 pimpl(new spider_pimpl()) {
-
 	if (name.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_") != std::string::npos)
 	{
 		throw std::exception("The name contains special characters.");
@@ -767,8 +1022,12 @@ pimpl(new spider_pimpl()) {
 	std::wstring unicode_name;
 	unicode_name.assign(name.begin(), name.end());
 
+
 	std::wstring unicode_write_event_name = unicode_name;
 	unicode_write_event_name += L"_write.event";
+
+	this->access = access;
+
 
 	this->pimpl->event_write_handle = CreateEvent(
 		NULL,               // default security attributes
@@ -777,22 +1036,42 @@ pimpl(new spider_pimpl()) {
 		unicode_write_event_name.c_str()  // object name
 	);
 
-	this->pimpl->shmem = ::CreateFileMapping(
-		INVALID_HANDLE_VALUE,
-		NULL,
-		PAGE_READWRITE,
-		0,
-		sizeof(native_type) * element_count,
-		unicode_name.c_str()
-	);
+	switch (mode)
+	{
+	case spider::create:
+		this->pimpl->shmem = ::CreateFileMapping(
+			INVALID_HANDLE_VALUE,
+			NULL,
+			PAGE_READWRITE,
+			0,
+			sizeof(native_type) * element_count,
+			unicode_name.c_str());
+		break;
+	case spider::open:
+		this->pimpl->shmem = ::OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, unicode_name.c_str());
+		break;
+	default:
+		throw std::exception("Invalid mode");
+		break;
+	}
 
-	this->instance = (native_type*)::MapViewOfFile(this->pimpl->shmem, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(native_type));
+	if (this->pimpl->shmem == nullptr)
+		throw std::exception("Invalid shared memory handle");
+
+	this->instance = (native_type*)::MapViewOfFile(this->pimpl->shmem, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(native_type) * element_count);
+
+	if (this->instance == nullptr) {
+		CloseHandle(this->pimpl->shmem);
+		throw std::exception("Invalid memory pointer");
+	}
+
 	this->delay_time = delay;
 	this->element_count = element_count;
 }
 
-spider::variable<native_type>::variable(std::string name, unsigned int delay) : instance(nullptr),
+spider::variable<native_type>::variable(std::string name, unsigned int delay, spider_mode mode, spider_access access) : instance(nullptr),
 pimpl(new spider_pimpl()) {
+
 	if (name.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_") != std::string::npos)
 	{
 		throw std::exception("The name contains special characters.");
@@ -805,6 +1084,9 @@ pimpl(new spider_pimpl()) {
 	std::wstring unicode_write_event_name = unicode_name;
 	unicode_write_event_name += L"_write.event";
 
+	this->access = access;
+
+
 	this->pimpl->event_write_handle = CreateEvent(
 		NULL,               // default security attributes
 		TRUE,               // manual-reset event
@@ -812,28 +1094,54 @@ pimpl(new spider_pimpl()) {
 		unicode_write_event_name.c_str()  // object name
 	);
 
-	this->pimpl->shmem = ::CreateFileMapping(
-		INVALID_HANDLE_VALUE,
-		NULL,
-		PAGE_READWRITE,
-		0,
-		sizeof(native_type),
-		unicode_name.c_str()
-	);
+	switch (mode)
+	{
+	case spider::create:
+		this->pimpl->shmem = ::CreateFileMapping(
+			INVALID_HANDLE_VALUE,
+			NULL,
+			PAGE_READWRITE,
+			0,
+			sizeof(native_type),
+			unicode_name.c_str());
+		break;
+	case spider::open:
+		this->pimpl->shmem = ::OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, unicode_name.c_str());
+		break;
+	default:
+		throw std::exception("Invalid mode");
+		break;
+	}
+
+	if (this->pimpl->shmem == nullptr)
+		throw std::exception("Invalid shared memory handle");
 
 	this->instance = (native_type*)::MapViewOfFile(this->pimpl->shmem, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(native_type));
+
+	if (this->instance == nullptr) {
+		CloseHandle(this->pimpl->shmem);
+		throw std::exception("Invalid memory pointer");
+	}
+
 	this->delay_time = delay;
 	this->element_count = 1;
 }
 
 spider::variable<native_type>::~variable() {
-	::UnmapViewOfFile(this->instance);
-	::CloseHandle(this->pimpl->shmem);
-	CloseHandle(this->pimpl->event_write_handle);
-	CloseHandle(this->pimpl->event_read_handle);
+	if (this->instance)
+		::UnmapViewOfFile(this->instance);
+	if (this->pimpl->shmem)
+		::CloseHandle(this->pimpl->shmem);
+	if (this->pimpl->event_write_handle)
+		CloseHandle(this->pimpl->event_write_handle);
+	if (this->pimpl->event_read_handle)
+		CloseHandle(this->pimpl->event_read_handle);
 }
 
 void spider::variable<native_type>::operator=(native_type data) {
+
+	if (this->access == spider_access::read_only)
+		throw std::exception("Proteced memory");
 
 	spider_raii raii([&] {
 		SetEvent(this->pimpl->event_write_handle);
@@ -910,6 +1218,10 @@ spider::variable<native_type>& spider::variable<native_type>::receive(native_typ
 }
 
 spider::variable<native_type>& spider::variable<native_type>::send(native_type* data, unsigned int element_count) {
+
+	if (this->access == spider_access::read_only)
+		throw std::exception("Proected memory");
+
 	DWORD write_handle_ret = WaitForSingleObject(this->pimpl->event_write_handle, this->delay_time);
 
 	unsigned int source_count = this->element_count;
@@ -942,7 +1254,7 @@ spider::variable<native_type>& spider::variable<native_type>::send(native_type* 
 // Char variable
 #undef native_type
 #define native_type char
-spider::variable<native_type>::variable(std::string name) : instance(nullptr),
+spider::variable<native_type>::variable(std::string name, spider_mode mode, spider_access access) : instance(nullptr),
 pimpl(new spider_pimpl()) {
 
 
@@ -958,6 +1270,9 @@ pimpl(new spider_pimpl()) {
 	std::wstring unicode_write_event_name = unicode_name;
 	unicode_write_event_name += L"_write.event";
 
+	this->access = access;
+
+
 	this->pimpl->event_write_handle = CreateEvent(
 		NULL,               // default security attributes
 		TRUE,               // manual-reset event
@@ -965,24 +1280,43 @@ pimpl(new spider_pimpl()) {
 		unicode_write_event_name.c_str()  // object name
 	);
 
-	this->pimpl->shmem = ::CreateFileMapping(
-		INVALID_HANDLE_VALUE,
-		NULL,
-		PAGE_READWRITE,
-		0,
-		sizeof(native_type),
-		unicode_name.c_str()
-	);
+	switch (mode)
+	{
+	case spider::create:
+		this->pimpl->shmem = ::CreateFileMapping(
+			INVALID_HANDLE_VALUE,
+			NULL,
+			PAGE_READWRITE,
+			0,
+			sizeof(native_type),
+			unicode_name.c_str());
+		break;
+	case spider::open:
+		this->pimpl->shmem = ::OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, unicode_name.c_str());
+		break;
+	default:
+		throw std::exception("Invalid mode");
+		break;
+	}
+
+	if (this->pimpl->shmem == nullptr)
+		throw std::exception("Invalid shared memory handle");
 
 	this->instance = (native_type*)::MapViewOfFile(this->pimpl->shmem, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(native_type));
+
+	if (this->instance == nullptr) {
+		CloseHandle(this->pimpl->shmem);
+		throw std::exception("Invalid memory pointer");
+	}
+
+
 	this->delay_time = 100;
 	this->element_count = 1;
 
 }
 
-spider::variable<native_type>::variable(std::string name, unsigned int element_count, unsigned int delay) : instance(nullptr),
+spider::variable<native_type>::variable(std::string name, unsigned int element_count, unsigned int delay, spider_mode mode, spider_access access) : instance(nullptr),
 pimpl(new spider_pimpl()) {
-
 	if (name.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_") != std::string::npos)
 	{
 		throw std::exception("The name contains special characters.");
@@ -991,8 +1325,12 @@ pimpl(new spider_pimpl()) {
 	std::wstring unicode_name;
 	unicode_name.assign(name.begin(), name.end());
 
+
 	std::wstring unicode_write_event_name = unicode_name;
 	unicode_write_event_name += L"_write.event";
+
+	this->access = access;
+
 
 	this->pimpl->event_write_handle = CreateEvent(
 		NULL,               // default security attributes
@@ -1001,22 +1339,42 @@ pimpl(new spider_pimpl()) {
 		unicode_write_event_name.c_str()  // object name
 	);
 
-	this->pimpl->shmem = ::CreateFileMapping(
-		INVALID_HANDLE_VALUE,
-		NULL,
-		PAGE_READWRITE,
-		0,
-		sizeof(native_type) * element_count,
-		unicode_name.c_str()
-	);
+	switch (mode)
+	{
+	case spider::create:
+		this->pimpl->shmem = ::CreateFileMapping(
+			INVALID_HANDLE_VALUE,
+			NULL,
+			PAGE_READWRITE,
+			0,
+			sizeof(native_type) * element_count,
+			unicode_name.c_str());
+		break;
+	case spider::open:
+		this->pimpl->shmem = ::OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, unicode_name.c_str());
+		break;
+	default:
+		throw std::exception("Invalid mode");
+		break;
+	}
 
-	this->instance = (native_type*)::MapViewOfFile(this->pimpl->shmem, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(native_type));
+	if (this->pimpl->shmem == nullptr)
+		throw std::exception("Invalid shared memory handle");
+
+	this->instance = (native_type*)::MapViewOfFile(this->pimpl->shmem, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(native_type) * element_count);
+
+	if (this->instance == nullptr) {
+		CloseHandle(this->pimpl->shmem);
+		throw std::exception("Invalid memory pointer");
+	}
+
 	this->delay_time = delay;
 	this->element_count = element_count;
 }
 
-spider::variable<native_type>::variable(std::string name, unsigned int delay) : instance(nullptr),
+spider::variable<native_type>::variable(std::string name, unsigned int delay, spider_mode mode, spider_access access) : instance(nullptr),
 pimpl(new spider_pimpl()) {
+
 	if (name.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_") != std::string::npos)
 	{
 		throw std::exception("The name contains special characters.");
@@ -1029,6 +1387,9 @@ pimpl(new spider_pimpl()) {
 	std::wstring unicode_write_event_name = unicode_name;
 	unicode_write_event_name += L"_write.event";
 
+	this->access = access;
+
+
 	this->pimpl->event_write_handle = CreateEvent(
 		NULL,               // default security attributes
 		TRUE,               // manual-reset event
@@ -1036,28 +1397,54 @@ pimpl(new spider_pimpl()) {
 		unicode_write_event_name.c_str()  // object name
 	);
 
-	this->pimpl->shmem = ::CreateFileMapping(
-		INVALID_HANDLE_VALUE,
-		NULL,
-		PAGE_READWRITE,
-		0,
-		sizeof(native_type),
-		unicode_name.c_str()
-	);
+	switch (mode)
+	{
+	case spider::create:
+		this->pimpl->shmem = ::CreateFileMapping(
+			INVALID_HANDLE_VALUE,
+			NULL,
+			PAGE_READWRITE,
+			0,
+			sizeof(native_type),
+			unicode_name.c_str());
+		break;
+	case spider::open:
+		this->pimpl->shmem = ::OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, unicode_name.c_str());
+		break;
+	default:
+		throw std::exception("Invalid mode");
+		break;
+	}
+
+	if (this->pimpl->shmem == nullptr)
+		throw std::exception("Invalid shared memory handle");
 
 	this->instance = (native_type*)::MapViewOfFile(this->pimpl->shmem, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(native_type));
+
+	if (this->instance == nullptr) {
+		CloseHandle(this->pimpl->shmem);
+		throw std::exception("Invalid memory pointer");
+	}
+
 	this->delay_time = delay;
 	this->element_count = 1;
 }
 
 spider::variable<native_type>::~variable() {
-	::UnmapViewOfFile(this->instance);
-	::CloseHandle(this->pimpl->shmem);
-	CloseHandle(this->pimpl->event_write_handle);
-	CloseHandle(this->pimpl->event_read_handle);
+	if (this->instance)
+		::UnmapViewOfFile(this->instance);
+	if (this->pimpl->shmem)
+		::CloseHandle(this->pimpl->shmem);
+	if (this->pimpl->event_write_handle)
+		CloseHandle(this->pimpl->event_write_handle);
+	if (this->pimpl->event_read_handle)
+		CloseHandle(this->pimpl->event_read_handle);
 }
 
 void spider::variable<native_type>::operator=(native_type data) {
+
+	if (this->access == spider_access::read_only)
+		throw std::exception("Proteced memory");
 
 	spider_raii raii([&] {
 		SetEvent(this->pimpl->event_write_handle);
@@ -1134,6 +1521,10 @@ spider::variable<native_type>& spider::variable<native_type>::receive(native_typ
 }
 
 spider::variable<native_type>& spider::variable<native_type>::send(native_type* data, unsigned int element_count) {
+
+	if (this->access == spider_access::read_only)
+		throw std::exception("Proected memory");
+
 	DWORD write_handle_ret = WaitForSingleObject(this->pimpl->event_write_handle, this->delay_time);
 
 	unsigned int source_count = this->element_count;
