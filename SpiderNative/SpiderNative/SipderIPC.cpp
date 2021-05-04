@@ -39,7 +39,8 @@ namespace spider {
 #undef native_type
 #define native_type double
 spider::variable<native_type>::variable(std::string name, spider_mode mode, spider_access access) : instance(nullptr),
-																								    pimpl(new spider_pimpl()){
+																								    pimpl(new spider_pimpl())
+																									{
 
 
 	if (name.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_") != std::string::npos)
@@ -1551,3 +1552,29 @@ spider::variable<native_type>& spider::variable<native_type>::send(native_type* 
 	}
 	return (*this);
 }
+
+
+
+
+
+//// function
+
+
+spider::function::function(std::string name) {
+	this->_name = name;
+
+}
+
+spider::function::function(std::string name, std::function<void(spider::function*)> lambda) {
+	this->_name = name;
+	this->lambda = lambda;
+}
+
+spider::function::~function() {
+
+}
+
+void spider::function::operator() () {
+	//this->lambda(this);
+}
+

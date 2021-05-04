@@ -3,6 +3,7 @@
 
 #include <string>
 #include <memory>
+#include <functional>
 
 #pragma warning(disable : 4251)
 
@@ -29,6 +30,17 @@ namespace spider {
 	// pimple class
 	class spider_pimpl;
 
+
+	class SPIDER_API Ivariable {
+
+	protected:
+		Ivariable() {};
+	public:
+		
+		virtual ~Ivariable() {};
+	};
+
+
 	// template class structures
 	template <typename T> class variable {};
 
@@ -36,7 +48,7 @@ namespace spider {
 	// template specialized class
 	#undef native_type
 	#define native_type double
-	template <> class __declspec(dllexport) variable<native_type> {
+	template <> class SPIDER_API variable<native_type> : Ivariable {
 
 	private:
 		native_type* instance;
@@ -60,7 +72,7 @@ namespace spider {
 	// template specialized class
 	#undef native_type
 	#define native_type int
-	template <> class __declspec(dllexport) variable<native_type> {
+	template <> class SPIDER_API variable<native_type> : Ivariable {
 
 	private:
 		native_type* instance;
@@ -84,7 +96,7 @@ namespace spider {
 	// template specialized class
 	#undef native_type
 	#define native_type unsigned int
-	template <> class __declspec(dllexport) variable<native_type> {
+	template <> class SPIDER_API variable<native_type> : Ivariable {
 
 	private:
 		native_type* instance;
@@ -109,7 +121,7 @@ namespace spider {
 	// template specialized class
     #undef native_type
     #define native_type char
-	template <> class __declspec(dllexport) variable<native_type> {
+	template <> class SPIDER_API variable<native_type> : Ivariable {
 
 	private:
 		native_type* instance;
@@ -134,7 +146,7 @@ namespace spider {
 	// template specialized class
 	#undef native_type
 	#define native_type unsigned char
-	template <> class __declspec(dllexport) variable<native_type> {
+	template <> class SPIDER_API variable<native_type> : Ivariable {
 
 	private:
 		native_type* instance;
@@ -159,6 +171,24 @@ namespace spider {
 	
 
 
+	// procedure
+	//template <typename T> class function {};
+
+	class function {
+	private:
+		std::string _name;
+		std::function<void(function *)> lambda;
+
+	public:
+		function(std::string name, std::function<void(function*)> lambda);
+		function(std::string name);
+		~function();
+
+
+		void operator() ();
+
+	};
+	
 };
 
 #endif
