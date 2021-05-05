@@ -11,11 +11,12 @@ namespace spider {
 	class spider_pimpl {
 	public:
 		HANDLE	shmem;
-		HANDLE	event_read_handle;
 		HANDLE	event_write_handle;
+		HANDLE  function_handle;
 		spider_pimpl() {
 			this->shmem = INVALID_HANDLE_VALUE;
 			this->event_write_handle = INVALID_HANDLE_VALUE;
+			this->function_handle = INVALID_HANDLE_VALUE;
 		}
 	};
 
@@ -222,8 +223,6 @@ spider::variable<native_type>::~variable() {
 		::CloseHandle(this->pimpl->shmem);
 	if (this->pimpl->event_write_handle)
 		CloseHandle(this->pimpl->event_write_handle);
-	if (this->pimpl->event_read_handle)
-		CloseHandle(this->pimpl->event_read_handle);
 }
 
 void spider::variable<native_type>::operator=(native_type data) {
@@ -528,8 +527,6 @@ spider::variable<native_type>::~variable() {
 		::CloseHandle(this->pimpl->shmem);
 	if (this->pimpl->event_write_handle)
 		CloseHandle(this->pimpl->event_write_handle);
-	if (this->pimpl->event_read_handle)
-		CloseHandle(this->pimpl->event_read_handle);
 }
 
 void spider::variable<native_type>::operator=(native_type data) {
@@ -830,8 +827,6 @@ spider::variable<native_type>::~variable() {
 		::CloseHandle(this->pimpl->shmem);
 	if (this->pimpl->event_write_handle)
 		CloseHandle(this->pimpl->event_write_handle);
-	if (this->pimpl->event_read_handle)
-		CloseHandle(this->pimpl->event_read_handle);
 }
 
 void spider::variable<native_type>::operator=(native_type data) {
@@ -1135,8 +1130,6 @@ spider::variable<native_type>::~variable() {
 		::CloseHandle(this->pimpl->shmem);
 	if (this->pimpl->event_write_handle)
 		CloseHandle(this->pimpl->event_write_handle);
-	if (this->pimpl->event_read_handle)
-		CloseHandle(this->pimpl->event_read_handle);
 }
 
 void spider::variable<native_type>::operator=(native_type data) {
@@ -1438,8 +1431,6 @@ spider::variable<native_type>::~variable() {
 		::CloseHandle(this->pimpl->shmem);
 	if (this->pimpl->event_write_handle)
 		CloseHandle(this->pimpl->event_write_handle);
-	if (this->pimpl->event_read_handle)
-		CloseHandle(this->pimpl->event_read_handle);
 }
 
 void spider::variable<native_type>::operator=(native_type data) {
@@ -1558,23 +1549,67 @@ spider::variable<native_type>& spider::variable<native_type>::send(native_type* 
 
 
 //// function
-
-
-spider::function::function(std::string name) {
+spider::function::function(std::string name) : pimpl(new spider_pimpl()),
+										       mode(spider::spider_call_mode::notifier){
 	this->_name = name;
+	std::wstring unicode_name;
+	unicode_name.assign(name.begin(), name.end());
 
+	this->pimpl->function_handle = CreateEvent(
+		NULL,               // default security attributes
+		FALSE,               // manual-reset event
+		FALSE,              // initial state is nonsignaled
+		unicode_name.c_str()  // object name
+	);
 }
 
-spider::function::function(std::string name, std::function<void(spider::function*)> lambda) {
+spider::function::function(std::string name, std::function<void(spider::function*)> lambda) : pimpl(new spider_pimpl()),
+																						      mode(spider::spider_call_mode::subscriber),
+																							  is_working(true){
 	this->_name = name;
 	this->lambda = lambda;
+
+	std::wstring unicode_name;
+	unicode_name.assign(name.begin(), name.end());
+
+	this->pimpl->function_handle = CreateEvent(
+		NULL,               // default security attributes
+		FALSE,               // manual-reset event
+		FALSE,              // initial state is nonsignaled
+		unicode_name.c_str()  // object name
+	);
+
+	worker = std::move(std::thread([&](){
+		while (true) {
+			try {
+				DWORD write_handle_ret = WaitForSingleObject(this->pimpl->function_handle, INFINITE);
+				switch (write_handle_ret) {
+				case WAIT_OBJECT_0:
+					this->lambda(this);
+					break;
+				case WAIT_TIMEOUT:
+					throw std::exception("Time out");
+					break;
+				case WAIT_FAILED:
+					throw std::exception("Unexpected error");
+					break;
+				default:
+					break;
+				}
+			}
+			catch (std::exception e) {
+				std::cout << e.what() << std::endl;
+			}
+		}
+	}));
+	worker.detach();
 }
 
 spider::function::~function() {
-
+	this->is_working = false;
 }
 
 void spider::function::operator() () {
-	//this->lambda(this);
+	SetEvent(this->pimpl->function_handle);
 }
 

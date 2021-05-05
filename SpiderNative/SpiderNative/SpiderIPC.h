@@ -4,6 +4,7 @@
 #include <string>
 #include <memory>
 #include <functional>
+#include <thread>
 
 #pragma warning(disable : 4251)
 
@@ -25,6 +26,12 @@ namespace spider {
 	enum spider_access {
 		read_only,
 		read_write
+	};
+
+
+	enum spider_call_mode {
+		subscriber,
+		notifier
 	};
 
 	// pimple class
@@ -171,16 +178,17 @@ namespace spider {
 	
 
 
-	// procedure
-	//template <typename T> class function {};
-
-	class function {
+	// function
+	class SPIDER_API function {
 	private:
 		std::string _name;
-		std::function<void(function *)> lambda;
-
+		std::function<void(spider::function *)> lambda;
+		std::shared_ptr<spider_pimpl> pimpl;
+		spider::spider_call_mode mode;
+		std::thread worker;
+		bool is_working;
 	public:
-		function(std::string name, std::function<void(function*)> lambda);
+		function(std::string name, std::function<void(spider::function*)> lambda);
 		function(std::string name);
 		~function();
 
