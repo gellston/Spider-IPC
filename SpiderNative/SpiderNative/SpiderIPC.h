@@ -28,11 +28,11 @@ namespace spider {
 		read_write
 	};
 
-
 	enum spider_call_mode {
 		subscriber,
 		notifier
 	};
+
 
 	// pimple class
 	class spider_pimpl;
@@ -40,11 +40,12 @@ namespace spider {
 
 	class SPIDER_API Ivariable {
 
-	protected:
-		Ivariable() {};
 	public:
-		
+		Ivariable() {};
 		virtual ~Ivariable() {};
+
+		virtual std::string type() = 0;
+		virtual std::string name() = 0;
 	};
 
 
@@ -55,7 +56,7 @@ namespace spider {
 	// template specialized class
 	#undef native_type
 	#define native_type double
-	template <> class SPIDER_API variable<native_type> : Ivariable {
+	template <> class SPIDER_API variable<native_type> : public Ivariable {
 
 	private:
 		native_type* instance;
@@ -63,6 +64,8 @@ namespace spider {
 		std::shared_ptr<spider_pimpl> pimpl;
 		unsigned int element_count;
 		spider::spider_access access;
+		std::string type_name;
+		std::string _name;
 	public:
 
 		variable(std::string name, spider_mode mode=spider_mode::create, spider_access access=spider::spider_access::read_write);
@@ -74,12 +77,14 @@ namespace spider {
 		spider::variable<native_type>& delay(unsigned int delay);
 		spider::variable<native_type>& receive(native_type* data, unsigned int element_count);
 		spider::variable<native_type>& send(native_type* data, unsigned int element_count);
+		std::string type() override;
+		std::string name() override;
 	};
 
 	// template specialized class
 	#undef native_type
 	#define native_type int
-	template <> class SPIDER_API variable<native_type> : Ivariable {
+	template <> class SPIDER_API variable<native_type> : public Ivariable {
 
 	private:
 		native_type* instance;
@@ -87,6 +92,8 @@ namespace spider {
 		std::shared_ptr<spider_pimpl> pimpl;
 		unsigned int element_count;
 		spider::spider_access access;
+		std::string type_name;
+		std::string _name;
 	public:
 
 		variable(std::string name, spider_mode mode = spider_mode::create, spider_access access = spider::spider_access::read_write);
@@ -98,12 +105,14 @@ namespace spider {
 		spider::variable<native_type>& delay(unsigned int delay);
 		spider::variable<native_type>& receive(native_type* data, unsigned int element_count);
 		spider::variable<native_type>& send(native_type* data, unsigned int element_count);
+		std::string type() override;
+		std::string name() override;
 	};
 
 	// template specialized class
 	#undef native_type
 	#define native_type unsigned int
-	template <> class SPIDER_API variable<native_type> : Ivariable {
+	template <> class SPIDER_API variable<native_type> : public Ivariable {
 
 	private:
 		native_type* instance;
@@ -111,6 +120,8 @@ namespace spider {
 		std::shared_ptr<spider_pimpl> pimpl;
 		unsigned int element_count;
 		spider::spider_access access;
+		std::string type_name;
+		std::string _name;
 	public:
 
 		variable(std::string name, spider_mode mode = spider_mode::create, spider_access access = spider::spider_access::read_write);
@@ -122,13 +133,15 @@ namespace spider {
 		spider::variable<native_type>& delay(unsigned int delay);
 		spider::variable<native_type>& receive(native_type* data, unsigned int element_count);
 		spider::variable<native_type>& send(native_type* data, unsigned int element_count);
+		std::string type() override;
+		std::string name() override;
 	};
 
 
 	// template specialized class
     #undef native_type
     #define native_type char
-	template <> class SPIDER_API variable<native_type> : Ivariable {
+	template <> class SPIDER_API variable<native_type> : public Ivariable {
 
 	private:
 		native_type* instance;
@@ -136,6 +149,8 @@ namespace spider {
 		std::shared_ptr<spider_pimpl> pimpl;
 		unsigned int element_count;
 		spider::spider_access access;
+		std::string type_name;
+		std::string _name;
 	public:
 
 		variable(std::string name, spider_mode mode = spider_mode::create, spider_access access = spider::spider_access::read_write);
@@ -147,13 +162,15 @@ namespace spider {
 		spider::variable<native_type>& delay(unsigned int delay);
 		spider::variable<native_type>& receive(native_type* data, unsigned int element_count);
 		spider::variable<native_type>& send(native_type* data, unsigned int element_count);
+		std::string type() override;
+		std::string name() override;
 	};
 
 
 	// template specialized class
 	#undef native_type
 	#define native_type unsigned char
-	template <> class SPIDER_API variable<native_type> : Ivariable {
+	template <> class SPIDER_API variable<native_type> : public Ivariable {
 
 	private:
 		native_type* instance;
@@ -161,6 +178,8 @@ namespace spider {
 		std::shared_ptr<spider_pimpl> pimpl;
 		unsigned int element_count;
 		spider::spider_access access;
+		std::string type_name;
+		std::string _name;
 	public:
 
 		variable(std::string name, spider_mode mode = spider_mode::create, spider_access access = spider::spider_access::read_write);
@@ -172,6 +191,8 @@ namespace spider {
 		spider::variable<native_type>& delay(unsigned int delay);
 		spider::variable<native_type>& receive(native_type* data, unsigned int element_count);
 		spider::variable<native_type>& send(native_type* data, unsigned int element_count);
+		std::string type() override;
+		std::string name() override;
 	};
 
 
@@ -187,6 +208,15 @@ namespace spider {
 		spider::spider_call_mode mode;
 		std::thread worker;
 		bool is_working;
+
+		std::vector<std::shared_ptr<Ivariable>> arguments;
+		std::vector<std::shared_ptr<Ivariable>> return_list;
+
+		bool is_complete;
+		bool is_args;
+		bool is_returns;
+		unsigned int delay_value;
+
 	public:
 		function(std::string name, std::function<void(spider::function*)> lambda);
 		function(std::string name);
@@ -195,6 +225,77 @@ namespace spider {
 
 		void operator() ();
 
+
+		spider::function& complete();
+		spider::function& args();
+		spider::function& returns();
+		spider::function& delay(unsigned int delay);
+
+		template<typename T> spider::function& arg(std::string name);
+		template<typename T> spider::function& arg(std::string name, unsigned int element_count);
+		template<typename T> spider::function& ret(std::string name);
+		template<typename T> spider::function& ret(std::string name, unsigned int element_count);
+		template<typename T> spider::function& push(std::string name, T value);
+		template<typename T> spider::function& push(std::string name, T* value, unsigned int element_count);
+		template<typename T> spider::function& get(std::string name, T* value);
+		template<typename T> spider::function& get(std::string name, T* value, unsigned int element_count);
+
+
+		#undef native_type
+		#define native_type unsigned char
+		template<> spider::function& arg<native_type>(std::string name);
+		template<> spider::function& arg<native_type>(std::string name, unsigned int element_count);
+		template<> spider::function& ret<native_type>(std::string name);
+		template<> spider::function& ret<native_type>(std::string name, unsigned int element_count);
+		template<> spider::function& push<native_type>(std::string name, native_type value);
+		template<> spider::function& push<native_type>(std::string name, native_type* value, unsigned int element_count);
+		template<> spider::function& get<native_type>(std::string name, native_type* value);
+		template<> spider::function& get<native_type>(std::string name, native_type* value, unsigned int element_count);
+
+
+		#undef native_type
+		#define native_type char
+		template<> spider::function& arg<native_type>(std::string name);
+		template<> spider::function& arg<native_type>(std::string name, unsigned int element_count);
+		template<> spider::function& ret<native_type>(std::string name);
+		template<> spider::function& ret<native_type>(std::string name, unsigned int element_count);
+		template<> spider::function& push<native_type>(std::string name, native_type value);
+		template<> spider::function& push<native_type>(std::string name, native_type* value, unsigned int element_count);
+		template<> spider::function& get<native_type>(std::string name, native_type* value);
+		template<> spider::function& get<native_type>(std::string name, native_type* value, unsigned int element_count);
+		
+		#undef native_type
+		#define native_type int
+		template<> spider::function& arg<native_type>(std::string name);
+		template<> spider::function& arg<native_type>(std::string name, unsigned int element_count);
+		template<> spider::function& ret<native_type>(std::string name);
+		template<> spider::function& ret<native_type>(std::string name, unsigned int element_count);
+		template<> spider::function& push<native_type>(std::string name, native_type value);
+		template<> spider::function& push<native_type>(std::string name, native_type* value, unsigned int element_count);
+		template<> spider::function& get<native_type>(std::string name, native_type* value);
+		template<> spider::function& get<native_type>(std::string name, native_type* value, unsigned int element_count);
+		
+		#undef native_type
+		#define native_type unsigned int
+		template<> spider::function& arg<native_type>(std::string name);
+		template<> spider::function& arg<native_type>(std::string name, unsigned int element_count);
+		template<> spider::function& ret<native_type>(std::string name);
+		template<> spider::function& ret<native_type>(std::string name, unsigned int element_count);
+		template<> spider::function& push<native_type>(std::string name, native_type value);
+		template<> spider::function& push<native_type>(std::string name, native_type* value, unsigned int element_count);
+		template<> spider::function& get<native_type>(std::string name, native_type* value);
+		template<> spider::function& get<native_type>(std::string name, native_type* value, unsigned int element_count);
+
+		#undef native_type
+		#define native_type double
+		template<> spider::function& arg<native_type>(std::string name);
+		template<> spider::function& arg<native_type>(std::string name, unsigned int element_count);
+		template<> spider::function& ret<native_type>(std::string name);
+		template<> spider::function& ret<native_type>(std::string name, unsigned int element_count);
+		template<> spider::function& push<native_type>(std::string name, native_type value);
+		template<> spider::function& push<native_type>(std::string name, native_type* value, unsigned int element_count);
+		template<> spider::function& get<native_type>(std::string name, native_type* value);
+		template<> spider::function& get<native_type>(std::string name, native_type* value, unsigned int element_count);
 	};
 	
 };
