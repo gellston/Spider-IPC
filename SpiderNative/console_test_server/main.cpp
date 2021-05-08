@@ -1,4 +1,4 @@
-#include "SpiderIPC.h"
+ï»¿#include "SpiderIPC.h"
 
 
 #include <thread>
@@ -17,7 +17,6 @@ int main() {
 
 	spider::function notifier("test");
 	notifier
-		.delay(10)
 		.args()
 		.arg<int>("argument1")
 		.arg<int>("argument2")
@@ -26,45 +25,59 @@ int main() {
 		.complete();
 
 
-	// ½Ãµå°ªÀ» ¾ò±â À§ÇÑ random_device »ı¼º.
+	// ì‹œë“œê°’ì„ ì–»ê¸° ìœ„í•œ random_device ìƒì„±.
 	std::random_device rd;
 
-	// random_device ¸¦ ÅëÇØ ³­¼ö »ı¼º ¿£ÁøÀ» ÃÊ±âÈ­ ÇÑ´Ù.
+	// random_device ë¥¼ í†µí•´ ë‚œìˆ˜ ìƒì„± ì—”ì§„ì„ ì´ˆê¸°í™” í•œë‹¤.
 	std::mt19937 gen(rd());
 
-	// 0 ºÎÅÍ 99 ±îÁö ±ÕµîÇÏ°Ô ³ªÅ¸³ª´Â ³­¼ö¿­À» »ı¼ºÇÏ±â À§ÇØ ±Õµî ºĞÆ÷ Á¤ÀÇ.
+	// 0 ë¶€í„° 99 ê¹Œì§€ ê· ë“±í•˜ê²Œ ë‚˜íƒ€ë‚˜ëŠ” ë‚œìˆ˜ì—´ì„ ìƒì„±í•˜ê¸° ìœ„í•´ ê· ë“± ë¶„í¬ ì •ì˜.
 	std::uniform_int_distribution<int> dis(0, 99);
 
-
-
+	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+	int count = 0;
 	while (true) {
+		try {
+			//begin = std::chrono::steady_clock::now();
+			
 
-		int argument1 = dis(gen);
-		int argument2 = dis(gen);
+			int argument1 = dis(gen);
+			int argument2 = dis(gen);
+			int returnValue = 0;
 
+			//std::cout << "argument1 = " << argument1 << std::endl;
+			//std::cout << "argument2 = " << argument2 << std::endl;
+			notifier
+				.args()
+				//.lock()
+				.push<int>("argument1", argument1)
+				.push<int>("argument2", argument2);
+				//.unlock();
 
-		std::cout << "argument1 = " << argument1 << std::endl;
-		std::cout << "argument2 = " << argument2 << std::endl;
+			notifier();
 
-		notifier
-			.args()
-			.push<int>("argument1", argument1)
-			.push<int>("argument2", argument2);
-		
+			
+			notifier
+				.returns()
+				//.lock()
+				.get("returnValue", &returnValue);
+				//.unlock();
 
-		notifier();
+			//std::cout << "return Value = " << returnValue << std::endl;
 
+			std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+			count++;
+			if (std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() > 1000) {
+				std::cout << "fps = " << count << std::endl;
+				begin = std::chrono::steady_clock::now();
+				count = 0;
 
-		int returnValue = 0;
-		notifier
-			.returns()
-			.get("returnValue", &returnValue);
+			}
+		}
+		catch (std::exception e) {
+			std::cout << e.what() << std::endl;
+		}
 
-
-		std::cout << "return Value = " << returnValue << std::endl;
-		std::cout << std::endl;
-		std::cout << std::endl;
-		//_sleep(100);
 	}
 	
 

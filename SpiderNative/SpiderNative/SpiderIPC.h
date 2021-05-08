@@ -5,6 +5,7 @@
 #include <memory>
 #include <functional>
 #include <thread>
+#include <mutex>
 
 #pragma warning(disable : 4251)
 
@@ -66,6 +67,7 @@ namespace spider {
 		spider::spider_access access;
 		std::string type_name;
 		std::string _name;
+		bool is_block;
 	public:
 
 		variable(std::string name, spider_mode mode=spider_mode::create, spider_access access=spider::spider_access::read_write);
@@ -77,6 +79,7 @@ namespace spider {
 		spider::variable<native_type>& delay(unsigned int delay);
 		spider::variable<native_type>& receive(native_type* data, unsigned int element_count);
 		spider::variable<native_type>& send(native_type* data, unsigned int element_count);
+		spider::variable<native_type>& block(bool enable);
 		std::string type() override;
 		std::string name() override;
 	};
@@ -94,6 +97,7 @@ namespace spider {
 		spider::spider_access access;
 		std::string type_name;
 		std::string _name;
+		bool is_block;
 	public:
 
 		variable(std::string name, spider_mode mode = spider_mode::create, spider_access access = spider::spider_access::read_write);
@@ -105,6 +109,7 @@ namespace spider {
 		spider::variable<native_type>& delay(unsigned int delay);
 		spider::variable<native_type>& receive(native_type* data, unsigned int element_count);
 		spider::variable<native_type>& send(native_type* data, unsigned int element_count);
+		spider::variable<native_type>& block(bool enable);
 		std::string type() override;
 		std::string name() override;
 	};
@@ -122,6 +127,7 @@ namespace spider {
 		spider::spider_access access;
 		std::string type_name;
 		std::string _name;
+		bool is_block;
 	public:
 
 		variable(std::string name, spider_mode mode = spider_mode::create, spider_access access = spider::spider_access::read_write);
@@ -133,6 +139,7 @@ namespace spider {
 		spider::variable<native_type>& delay(unsigned int delay);
 		spider::variable<native_type>& receive(native_type* data, unsigned int element_count);
 		spider::variable<native_type>& send(native_type* data, unsigned int element_count);
+		spider::variable<native_type>& block(bool enable);
 		std::string type() override;
 		std::string name() override;
 	};
@@ -151,6 +158,7 @@ namespace spider {
 		spider::spider_access access;
 		std::string type_name;
 		std::string _name;
+		bool is_block;
 	public:
 
 		variable(std::string name, spider_mode mode = spider_mode::create, spider_access access = spider::spider_access::read_write);
@@ -162,6 +170,7 @@ namespace spider {
 		spider::variable<native_type>& delay(unsigned int delay);
 		spider::variable<native_type>& receive(native_type* data, unsigned int element_count);
 		spider::variable<native_type>& send(native_type* data, unsigned int element_count);
+		spider::variable<native_type>& block(bool enable);
 		std::string type() override;
 		std::string name() override;
 	};
@@ -180,6 +189,7 @@ namespace spider {
 		spider::spider_access access;
 		std::string type_name;
 		std::string _name;
+		bool is_block;
 	public:
 
 		variable(std::string name, spider_mode mode = spider_mode::create, spider_access access = spider::spider_access::read_write);
@@ -191,6 +201,7 @@ namespace spider {
 		spider::variable<native_type>& delay(unsigned int delay);
 		spider::variable<native_type>& receive(native_type* data, unsigned int element_count);
 		spider::variable<native_type>& send(native_type* data, unsigned int element_count);
+		spider::variable<native_type>& block(bool enable);
 		std::string type() override;
 		std::string name() override;
 	};
@@ -217,6 +228,8 @@ namespace spider {
 		bool is_returns;
 		unsigned int delay_value;
 
+		
+
 	public:
 		function(std::string name, std::function<void(spider::function*)> lambda);
 		function(std::string name);
@@ -230,6 +243,8 @@ namespace spider {
 		spider::function& args();
 		spider::function& returns();
 		spider::function& delay(unsigned int delay);
+		spider::function& lock();
+		spider::function& unlock();
 
 		template<typename T> spider::function& arg(std::string name);
 		template<typename T> spider::function& arg(std::string name, unsigned int element_count);
@@ -239,7 +254,7 @@ namespace spider {
 		template<typename T> spider::function& push(std::string name, T* value, unsigned int element_count);
 		template<typename T> spider::function& get(std::string name, T* value);
 		template<typename T> spider::function& get(std::string name, T* value, unsigned int element_count);
-
+		
 
 		#undef native_type
 		#define native_type unsigned char

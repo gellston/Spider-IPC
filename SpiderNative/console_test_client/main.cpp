@@ -9,30 +9,34 @@
 
 int main() {
 
-	
+	std::atomic<int> count{ 500 };
 
 	spider::function notifier("test", [&](spider::function* function) {
 
-		int argument1 = 0;
-		int argument2 = 0;
+		try {
+			int argument1 = 0;
+			int argument2 = 0;
 
 
-		function->args()
-			.get("argument1", &argument1)
-			.get("argument2", &argument2);
-			
+			function->args()
+				.get("argument1", &argument1)
+				.get("argument2", &argument2);
 
 
-		int result = argument1 + argument2;
-		std::cout << "calculated value = " << result << std::endl;
-		function->returns()
-			.push("returnValue", result);
-			
+
+			int result = argument1 + argument2;
+			//std::cout << "calculated value = " << result << std::endl;
+			function->returns()
+				.push("returnValue", result);
+
+		}
+		catch (std::exception e) {
+			std::cout << e.what() << std::endl;
+		}
 
 	});
 
 	notifier
-		.delay(10)
 		.args()
 		.arg<int>("argument1")
 		.arg<int>("argument2")

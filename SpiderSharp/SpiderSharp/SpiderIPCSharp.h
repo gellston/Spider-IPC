@@ -29,12 +29,11 @@ namespace SPIDER {
 
 	class Variable {
 		private:
-			spider::variable<int> * instance;
 
 
 	public:
 		Variable() {
-			instance = new spider::variable<int>("test");
+
 		}
 	};
 
