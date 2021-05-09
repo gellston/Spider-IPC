@@ -114,6 +114,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="managed_shared_ptr.h" />
     <ClInclude Include="SpiderIPCSharp.h" />
   </ItemGroup>
   <ItemGroup>
