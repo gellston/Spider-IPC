@@ -13,6 +13,10 @@ using namespace System::Runtime::InteropServices;
 
 namespace SPIDER {
 
+
+
+
+
 	public enum class SPIDER_MODE {
 		CREATE = 0,
 		OPEN,
@@ -367,13 +371,80 @@ namespace SPIDER {
 	};
 	
 
+
+	ref class Function;
+
+
+	public delegate void FunctionTrace(Function^ instance);
+	public delegate void NativeFunctionTrace(spider::function* instance);
+
 	public ref class Function {
+
 	private:
+
+		FunctionTrace^ _functionTrace;
+		NativeFunctionTrace^ _nativeFunctionTrace;
+		IntPtr NativeCallbackHandle;
+		GCHandle BlockGCHandleSharp;
+		GCHandle BlockGCHandleNative;
+
+
 		mananged_shared_ptr<spider::function> _instance;
+
+
+		void NativeCallback(spider::function * callback) {
+			this->_functionTrace->Invoke(this);
+		}
+
+		void SharpCallback(Function^ instance) {
+
+		}
+
 	public:
+
+
+
 		Function(String^ name) {
-			auto _name = msclr::interop::marshal_as<std::string>(name);
-			this->_instance = new spider::function(_name);
+
+			try {
+				auto _name = msclr::interop::marshal_as<std::string>(name);
+				this->_instance = new spider::function(_name);
+
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew String(e.what()));
+			}
+
+			
+		}
+
+
+
+
+		Function(String^ name, FunctionTrace^ delegate) {
+			try {
+				auto _name = msclr::interop::marshal_as<std::string>(name);
+				
+
+				this->_functionTrace = gcnew FunctionTrace(this, &SPIDER::Function::SharpCallback);
+				this->BlockGCHandleSharp = GCHandle::Alloc(this->_functionTrace);
+
+				this->_functionTrace = static_cast<FunctionTrace^> (Delegate::Combine(this->_functionTrace, delegate));
+				
+
+				this->_nativeFunctionTrace = gcnew NativeFunctionTrace(this, &SPIDER::Function::NativeCallback);
+				this->BlockGCHandleNative = GCHandle::Alloc(this->_functionTrace);
+				this->NativeCallbackHandle = Marshal::GetFunctionPointerForDelegate(this->_nativeFunctionTrace);
+				auto native_pointer = static_cast<void(*)(spider::function*)>(this->NativeCallbackHandle.ToPointer());
+
+
+
+				this->_instance = new spider::function(_name, native_pointer);
+
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew String(e.what()));
+			}
 		}
 
 		~Function() {
@@ -468,16 +539,16 @@ namespace SPIDER {
 					this->_instance->arg<int>(_name);
 				}
 				else if (T::typeid == System::UInt32::typeid) {
-
+					this->_instance->arg<unsigned int>(_name);
 				}
 				else if (T::typeid == System::Double::typeid) {
-
+					this->_instance->arg<double>(_name);
 				}
 				else if (T::typeid == System::Byte::typeid) {
-
+					this->_instance->arg<unsigned char>(_name);
 				}
 				else if (T::typeid == System::SByte::typeid) {
-
+					this->_instance->arg<char>(_name);
 				}
 				else {
 					throw std::exception("Type not support");
@@ -486,11 +557,288 @@ namespace SPIDER {
 			catch (std::exception e) {
 				throw gcnew Exception(gcnew String(e.what()));
 			}
-			
+			return this;
 		}
 
-	
+		generic<typename T> Function^ Arg(String^ name, unsigned int element_count) {
+			auto _name = msclr::interop::marshal_as<std::string>(name);
+			try {
+				if (T::typeid == System::Int32::typeid) {
+					this->_instance->arg<int>(_name, element_count);
+				}
+				else if (T::typeid == System::UInt32::typeid) {
+					this->_instance->arg<int>(_name, element_count);
+				}
+				else if (T::typeid == System::Double::typeid) {
+					this->_instance->arg<int>(_name, element_count);
+				}
+				else if (T::typeid == System::Byte::typeid) {
+					this->_instance->arg<int>(_name, element_count);
+				}
+				else if (T::typeid == System::SByte::typeid) {
+					this->_instance->arg<int>(_name, element_count);
+				}
+				else {
+					throw std::exception("Type not support");
+				}
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew String(e.what()));
+			}
+			return this;
+		}
+
+
+		generic<typename T> Function^ Ret(String^ name) {
+			auto _name = msclr::interop::marshal_as<std::string>(name);
+			try {
+				if (T::typeid == System::Int32::typeid) {
+					this->_instance->ret<int>(_name);
+				}
+				else if (T::typeid == System::UInt32::typeid) {
+					this->_instance->ret<unsigned int>(_name);
+				}
+				else if (T::typeid == System::Double::typeid) {
+					this->_instance->ret<double>(_name);
+				}
+				else if (T::typeid == System::Byte::typeid) {
+					this->_instance->ret<unsigned char>(_name);
+				}
+				else if (T::typeid == System::SByte::typeid) {
+					this->_instance->ret<char>(_name);
+				}
+				else {
+					throw std::exception("Type not support");
+				}
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew String(e.what()));
+			}
+			return this;
+		}
+
+		generic<typename T> Function^ Ret(String^ name, unsigned int element_count) {
+			auto _name = msclr::interop::marshal_as<std::string>(name);
+			try {
+				if (T::typeid == System::Int32::typeid) {
+					this->_instance->ret<int>(_name, element_count);
+				}
+				else if (T::typeid == System::UInt32::typeid) {
+					this->_instance->ret<int>(_name, element_count);
+				}
+				else if (T::typeid == System::Double::typeid) {
+					this->_instance->ret<int>(_name, element_count);
+				}
+				else if (T::typeid == System::Byte::typeid) {
+					this->_instance->ret<int>(_name, element_count);
+				}
+				else if (T::typeid == System::SByte::typeid) {
+					this->_instance->ret<int>(_name, element_count);
+				}
+				else {
+					throw std::exception("Type not support");
+				}
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew String(e.what()));
+			}
+			return this;
+		}
+
+		generic<typename T> Function^ Push(String^ name, Object^ value) {
+			auto _name = msclr::interop::marshal_as<std::string>(name);
+			try {
+				if (T::typeid == System::Int32::typeid) {
+					int _value = safe_cast<int>(value);
+					this->_instance->push<int>(_name, _value);
+				}
+				else if (T::typeid == System::UInt32::typeid) {
+					unsigned int _value = safe_cast<unsigned int>(value);
+					this->_instance->push<unsigned int>(_name, _value);
+				}
+				else if (T::typeid == System::Double::typeid) {
+					double _value = safe_cast<double>(value);
+					this->_instance->push<double>(_name, _value);
+				}
+				else if (T::typeid == System::Byte::typeid) {
+					unsigned char _value = safe_cast<unsigned char>(value);
+					this->_instance->push<unsigned char>(_name, _value);
+				}
+				else if (T::typeid == System::SByte::typeid) {
+					char _value = safe_cast<char>(value);
+					this->_instance->push<char>(_name, _value);
+				}
+				else {
+					throw std::exception("Type not support");
+				}
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew String(e.what()));
+			}
+			return this;
+		}
+
+		generic<typename T> Function^ Push(String^ name, IntPtr pointer, unsigned int element_count) {
+			auto _name = msclr::interop::marshal_as<std::string>(name);
+			try {
+				if (T::typeid == System::Int32::typeid) {
+					auto _pointer = static_cast<int*>(pointer.ToPointer());
+					this->_instance->push<int>(_name, _pointer, element_count);
+				}
+				else if (T::typeid == System::UInt32::typeid) {
+					auto _pointer = static_cast<unsigned int*>(pointer.ToPointer());
+					this->_instance->push<unsigned int>(_name, _pointer, element_count);
+				}
+				else if (T::typeid == System::Double::typeid) {
+					auto _pointer = static_cast<double*>(pointer.ToPointer());
+					this->_instance->push<double>(_name, _pointer, element_count);
+				}
+				else if (T::typeid == System::Byte::typeid) {
+					auto _pointer = static_cast<unsigned char*>(pointer.ToPointer());
+					this->_instance->push<unsigned char>(_name, _pointer, element_count);
+				}
+				else if (T::typeid == System::SByte::typeid) {
+					auto _pointer = static_cast<char*>(pointer.ToPointer());
+					this->_instance->push<char>(_name, _pointer, element_count);
+				}
+				else {
+					throw std::exception("Type not support");
+				}
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew String(e.what()));
+			}
+			return this;
+		}
+
+
+		generic<typename T> Function^ Get(String^ name, [Out]int% value) {
+			auto _name = msclr::interop::marshal_as<std::string>(name);
+			try {
+				if(T::typeid == System::Int32::typeid){
+					int _value = 0;
+					this->_instance->get<int>(_name, &_value);
+					value = _value;
+				}
+				else {
+					throw std::exception("Type not support");
+				}
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew String(e.what()));
+			}
+			return this;
+		}
+
+		generic<typename T> Function^ Get(String^ name, [Out]unsigned int% value) {
+			auto _name = msclr::interop::marshal_as<std::string>(name);
+			try {
+				if (T::typeid == System::UInt32::typeid) {
+					unsigned int _value = 0;
+					this->_instance->get<unsigned int>(_name, &_value);
+					value = _value;
+				}
+				else {
+					throw std::exception("Type not support");
+				}
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew String(e.what()));
+			}
+			return this;
+		}
+
+		generic<typename T> Function^ Get(String^ name, [Out]double% value) {
+			auto _name = msclr::interop::marshal_as<std::string>(name);
+			try {
+				if (T::typeid == System::Double::typeid) {
+					double _value = 0;
+					this->_instance->get<double>(_name, &_value);
+					value = _value;
+				}
+				else {
+					throw std::exception("Type not support");
+				}
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew String(e.what()));
+			}
+			return this;
+		}
+
+		generic<typename T> Function^ Get(String^ name, [Out]char% value) {
+			auto _name = msclr::interop::marshal_as<std::string>(name);
+			try {
+				if (T::typeid == char::typeid) {
+					char _value = 0;
+					this->_instance->get<char>(_name, &_value);
+					value = _value;
+				}
+				else {
+					throw std::exception("Type not support");
+				}
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew String(e.what()));
+			}
+			return this;
+		}
+
+		generic<typename T> Function^ Get(String^ name, unsigned char% value) {
+			typedef unsigned char uchar;
+			auto _name = msclr::interop::marshal_as<std::string>(name);
+			try {
+				if (T::typeid == uchar::typeid) {
+					unsigned char _value = 0;
+					this->_instance->get<unsigned char>(_name, &_value);
+					value = _value;
+				}
+				else {
+					throw std::exception("Type not support");
+				}
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew String(e.what()));
+			}
+			return this;
+		}
+
+		generic<typename T> Function^ Get(String^ name, IntPtr pointer, unsigned int element_count) {
+			auto _name = msclr::interop::marshal_as<std::string>(name);
+			try {
+				if (T::typeid == System::Int32::typeid) {
+					auto _pointer = static_cast<int*>(pointer.ToPointer());
+					this->_instance->get<int>(_name, _pointer, element_count);
+				}
+				else if (T::typeid == System::UInt32::typeid) {
+					auto _pointer = static_cast<unsigned int*>(pointer.ToPointer());
+					this->_instance->get<unsigned int>(_name, _pointer, element_count);
+				}
+				else if (T::typeid == System::Double::typeid) {
+					auto _pointer = static_cast<double*>(pointer.ToPointer());
+					this->_instance->get<double>(_name, _pointer, element_count);
+				}
+				else if (T::typeid == System::Byte::typeid) {
+					auto _pointer = static_cast<unsigned char*>(pointer.ToPointer());
+					this->_instance->get<unsigned char>(_name, _pointer, element_count);
+				}
+				else if (T::typeid == System::SByte::typeid) {
+					auto _pointer = static_cast<char*>(pointer.ToPointer());
+					this->_instance->get<char>(_name, _pointer, element_count);
+				}
+				else {
+					throw std::exception("Type not support");
+				}
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew String(e.what()));
+			}
+			return this;
+		}
+
 	};
+
+
 }
 
 #endif
