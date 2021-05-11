@@ -23,7 +23,7 @@
     <ProjectGuid>{1CA4E267-B0B6-492D-B6E1-38C84177092B}</ProjectGuid>
     <Keyword>NetCoreCProj</Keyword>
     <RootNamespace>SpiderSharp</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

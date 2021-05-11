@@ -1,8 +1,6 @@
 #ifndef SPIDER_IPC_SHARP
 #define SPIDER_IPC_SHARP
 
-
-
 #include <SpiderIPC.h>
 
 #include "managed_shared_ptr.h"
@@ -15,207 +13,484 @@ using namespace System::Runtime::InteropServices;
 
 namespace SPIDER {
 
-	public enum SPIDER_MODE {
+	public enum class SPIDER_MODE {
 		CREATE = 0,
 		OPEN,
 	};
 
-	public enum SPIDER_ACCESS {
+	public enum class SPIDER_ACCESS {
 		READ_ONLY,
 		READ_WRITE
 	};
 
-	public enum SPIDER_CALL_MODE {
+	public enum class SPIDER_CALL_MODE {
 		SUBSCRIBER,
 		NOTIFIER
 	};
 
 
-	generic <class ItemType>
-	public ref class MyGeneric {
-		ItemType m_item;
+	generic <typename T> public ref class Variable {
+
+	private:
+		mananged_shared_ptr<spider::Ivariable> _instance;
+
 
 	public:
-		MyGeneric(ItemType item) : m_item(item) {}
-		void F() {
-			Console::WriteLine("F");
+
+	
+
+		
+		Variable(String^ name, SPIDER_MODE mode, SPIDER_ACCESS access) {
+			std::string _name = msclr::interop::marshal_as<std::string>(name);
+			spider::spider_mode _mode = static_cast<spider::spider_mode>(mode);
+			spider::spider_access _access = static_cast<spider::spider_access>(access);
+
+
+			try {
+				if (T::typeid == System::Int32::typeid) {
+					auto variable = new spider::variable<int>(_name, _mode, _access);
+					this->_instance = variable;
+
+				}
+				else if (T::typeid == System::UInt32::typeid) {
+					auto variable = new spider::variable<unsigned int>(_name, _mode, _access);
+					this->_instance = variable;
+
+				}
+				else if (T::typeid == System::Double::typeid) {
+					auto variable = new spider::variable<double>(_name, _mode, _access);
+					this->_instance = variable;
+				}
+				else if (T::typeid == System::Byte::typeid) {
+					auto variable = new spider::variable<unsigned char>(_name, _mode, _access);
+					this->_instance = variable;
+				}
+				else if (T::typeid == System::SByte::typeid) {
+					auto variable = new spider::variable<char>(_name, _mode, _access);
+					this->_instance = variable;
+				}
+				else {
+					throw std::exception("Type not support");
+				}
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew System::String(e.what()));
+			}
+
+
+
 		}
-	};
+		Variable(String^ name, unsigned int element_count, unsigned int delay, SPIDER_MODE mode, SPIDER_ACCESS access) {
+
+			std::string _name = msclr::interop::marshal_as<std::string>(name);
+			spider::spider_mode _mode = static_cast<spider::spider_mode>(mode);
+			spider::spider_access _access = static_cast<spider::spider_access>(access);
+
+
+			try {
+				if (T::typeid == System::Int32::typeid) {
+					auto variable = new spider::variable<int>(_name,element_count, delay, _mode, _access);
+					this->_instance = variable;
+
+				}
+				else if (T::typeid == System::UInt32::typeid) {
+					auto variable = new spider::variable<int>(_name, element_count, delay, _mode, _access);
+					this->_instance = variable;
+
+				}
+				else if (T::typeid == System::Double::typeid) {
+					auto variable = new spider::variable<int>(_name, element_count, delay, _mode, _access);
+					this->_instance = variable;
+				}
+				else if (T::typeid == System::Byte::typeid) {
+					auto variable = new spider::variable<unsigned char>(_name, element_count, delay, _mode, _access);
+					this->_instance = variable;
+				}
+				else if (T::typeid == System::SByte::typeid) {
+					auto variable = new spider::variable<char>(_name, element_count, delay, _mode, _access);
+					this->_instance = variable;
+				}
+				else {
+					throw std::exception("Type not support");
+				}
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew System::String(e.what()));
+			}
 
 
 
-	template <typename T> public ref class Variable {
+		}
+		Variable(String^ name, unsigned int delay, SPIDER_MODE mode, SPIDER_ACCESS access) {
 
-	private:
-		mananged_shared_ptr<spider::variable<T>> _instance;
+			std::string _name = msclr::interop::marshal_as<std::string>(name);
+			spider::spider_mode _mode = static_cast<spider::spider_mode>(mode);
+			spider::spider_access _access = static_cast<spider::spider_access>(access);
 
 
-	public:
+			try {
+				if (T::typeid == System::Int32::typeid) {
+					auto variable = new spider::variable<int>(_name, delay, _mode, _access);
+					this->_instance = variable;
 
-		Variable(String^ name, SPIDER_MODE mode, SPIDER_ACCESS access);
-		Variable(String^ name, unsigned int element_count, unsigned int delay, SPIDER_MODE mode, SPIDER_ACCESS access);
-		Variable(String^ name, unsigned int delay, SPIDER_MODE mode, SPIDER_ACCESS access);
+				}
+				else if (T::typeid == System::UInt32::typeid) {
+					auto variable = new spider::variable<int>(_name, delay, _mode, _access);
+					this->_instance = variable;
 
-		~Variable();
-		!Variable();
+				}
+				else if (T::typeid == System::Double::typeid) {
+					auto variable = new spider::variable<int>(_name, delay, _mode, _access);
+					this->_instance = variable;
+				}
+				else if (T::typeid == System::Byte::typeid) {
+					auto variable = new spider::variable<unsigned char>(_name, delay, _mode, _access);
+					this->_instance = variable;
+				}
+				else if (T::typeid == System::SByte::typeid) {
+					auto variable = new spider::variable<char>(_name, delay, _mode, _access);
+					this->_instance = variable;
+				}
+				else {
+					throw std::exception("Type not support");
+				}
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew System::String(e.what()));
+			}
 
-		void operator=(T data);
-		void operator>>(T% data);
-		Variable<T>% Delay(unsigned int delay);
-		Variable<T>% Receive(T* data, unsigned int element_count);
-		Variable<T>% Send(T* data, unsigned int element_count);
-		Variable<T>% Block(bool enable);
-		String^ Type();
-		String^ Name();
 
-	};
+		}
+		
+		~Variable() {
 
-	
-	#undef NATIVE_TYPE 
-	#define NATIVE_TYPE double
-	template <> public ref class Variable<NATIVE_TYPE> {
+		}
+		!Variable() {
 
-	private:
-		mananged_shared_ptr<spider::variable<NATIVE_TYPE>> _instance;
+		}
 
 		
-	public:
+	    void Set(System::Object^ data) {
+			try {
+				if (T::typeid == System::Int32::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<int>>(this->_instance.get());
+					*temp.get() = safe_cast<int>(data);
+				}
+				else if (T::typeid == System::UInt32::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<unsigned int>>(this->_instance.get());
+					*temp.get() = safe_cast<unsigned int>(data);
+				}
+				else if (T::typeid == System::Double::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<double>>(this->_instance.get());
+					*temp.get() = safe_cast<double>(data);
+				}
+				else if (T::typeid == System::Byte::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<unsigned char>>(this->_instance.get());
+					*temp.get() = safe_cast<unsigned char>(data);
+				}
+				else if (T::typeid == System::SByte::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<char>>(this->_instance.get());
+					*temp.get() = safe_cast<char>(data);
+				}
+				else {
+					throw std::exception("Type not support");
+				}
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew System::String(e.what()));
+			}
+		}
+		Object^ Get() {
+			try {
+				if (T::typeid == System::Int32::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<int>>(this->_instance.get());
+					int value = 0;
+					*temp.get() >> value;
+
+					return value;
+				}
+				else if (T::typeid == System::UInt32::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<unsigned int>>(this->_instance.get());
+					unsigned int value = 0;
+					*temp.get() >> value;
+
+					return value;
+				}
+				else if (T::typeid == System::Double::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<double>>(this->_instance.get());
+					double value = 0;
+					*temp.get() >> value;
+
+					return value;
+				}
+				else if (T::typeid == System::Byte::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<unsigned char>>(this->_instance.get());
+					unsigned char value = 0;
+					*temp.get() >> value;
+
+					return value;
+				}
+				else if (T::typeid == System::SByte::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<char>>(this->_instance.get());
+					char value = 0;
+					*temp.get() >> value;
+
+					return value;
+				}
+				else {
+					throw std::exception("Type not support");
+				}
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew System::String(e.what()));
+			}
+		}
+		Variable<T>^ Delay(unsigned int delay) {
+			auto temp = std::static_pointer_cast<spider::variable<double>>(this->_instance.get());
+			temp->delay(delay);
+
+			return this;
+		}
+		Variable<T>^ Receive(IntPtr data, unsigned int element_count) {
+			try {
+				if (T::typeid == System::Int32::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<int>>(this->_instance.get());
+					temp->receive((int*)data.ToPointer(), element_count);
+				}
+				else if (T::typeid == System::UInt32::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<unsigned int>>(this->_instance.get());
+					temp->receive((unsigned int*)data.ToPointer(), element_count);
+				}
+				else if (T::typeid == System::Double::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<double>>(this->_instance.get());
+					temp->receive((double*)data.ToPointer(), element_count);
+				}
+				else if (T::typeid == System::Byte::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<unsigned char>>(this->_instance.get());
+					temp->receive((unsigned char*)data.ToPointer(), element_count);
+				}
+				else if (T::typeid == System::SByte::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<char>>(this->_instance.get());
+					temp->receive((char*)data.ToPointer(), element_count);
+				}
+				else {
+					throw std::exception("Type not support");
+				}
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew System::String(e.what()));
+			}
+			return this;
+		}
+		Variable<T>^ Send(IntPtr data, unsigned int element_count) {
+			try {
+				if (T::typeid == System::Int32::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<int>>(this->_instance.get());
+					temp->send((int *)data.ToPointer(), element_count);
+				}
+				else if (T::typeid == System::UInt32::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<unsigned int>>(this->_instance.get());
+					temp->send((unsigned int*)data.ToPointer(), element_count);
+				}
+				else if (T::typeid == System::Double::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<double>>(this->_instance.get());
+					temp->send((double*)data.ToPointer(), element_count);
+				}
+				else if (T::typeid == System::Byte::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<unsigned char>>(this->_instance.get());
+					temp->send((unsigned char*)data.ToPointer(), element_count);
+				}
+				else if (T::typeid == System::SByte::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<char>>(this->_instance.get());
+					temp->send((char*)data.ToPointer(), element_count);
+				}
+				else {
+					throw std::exception("Type not support");
+				}
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew System::String(e.what()));
+			}
+			return this;
+		}
+		Variable<T>^ Block(bool enable) {
+			try {
+				if (T::typeid == System::Int32::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<int>>(this->_instance.get());
+					temp->block(enable);
+				}
+				else if (T::typeid == System::UInt32::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<unsigned int>>(this->_instance.get());
+					temp->block(enable);
+				}
+				else if (T::typeid == System::Double::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<double>>(this->_instance.get());
+					temp->block(enable);
+				}
+				else if (T::typeid == System::Byte::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<unsigned char>>(this->_instance.get());
+					temp->block(enable);
+				}
+				else if (T::typeid == System::SByte::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<char>>(this->_instance.get());
+					temp->block(enable);
+				}
+				else {
+					throw std::exception("Type not support");
+				}
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew System::String(e.what()));
+			}
+			return this;
+		}
+		String^ Type() {
+			try {
+				return gcnew System::String(this->_instance->type().c_str());
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew System::String(e.what()));
+			}
+			
+		}
+		String^ Name() {
+			try {
+				return gcnew System::String(this->_instance->name().c_str());
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew System::String(e.what()));
+			}
+		}
+
 		
-		Variable(String^ name, SPIDER_MODE mode, SPIDER_ACCESS access);
-		Variable(String^ name, unsigned int element_count, unsigned int delay, SPIDER_MODE mode, SPIDER_ACCESS access);
-		Variable(String^ name, unsigned int delay, SPIDER_MODE mode, SPIDER_ACCESS access);
-
-		~Variable();
-		!Variable();
-
-		void operator=(NATIVE_TYPE data);
-		void operator>>( NATIVE_TYPE% data);
-		Variable<NATIVE_TYPE>% Delay(unsigned int delay);
-		Variable<NATIVE_TYPE>% Receive(NATIVE_TYPE* data, unsigned int element_count);
-		Variable<NATIVE_TYPE>% Send( NATIVE_TYPE* data, unsigned int element_count);
-		Variable<NATIVE_TYPE>% Block(bool enable);
-		String^ Type();
-		String^ Name();
 
 	};
+	
 
-
-	#undef NATIVE_TYPE 
-	#define NATIVE_TYPE char
-	template <> public ref class Variable<NATIVE_TYPE> {
-
+	public ref class Function {
 	private:
-		mananged_shared_ptr<spider::variable<NATIVE_TYPE>> _instance;
-
-
+		mananged_shared_ptr<spider::function> _instance;
 	public:
+		Function(String^ name) {
+			auto _name = msclr::interop::marshal_as<std::string>(name);
+			this->_instance = new spider::function(_name);
+		}
 
-		Variable(String^ name, SPIDER_MODE mode, SPIDER_ACCESS access);
-		Variable(String^ name, unsigned int element_count, unsigned int delay, SPIDER_MODE mode, SPIDER_ACCESS access);
-		Variable(String^ name, unsigned int delay, SPIDER_MODE mode, SPIDER_ACCESS access);
+		~Function() {
 
-		~Variable();
-		!Variable();
+		}
+		!Function() {
 
-		void operator=(NATIVE_TYPE data);
-		void operator>>(NATIVE_TYPE% data);
-		Variable<NATIVE_TYPE>% Delay(unsigned int delay);
-		Variable<NATIVE_TYPE>% Receive(NATIVE_TYPE* data, unsigned int element_count);
-		Variable<NATIVE_TYPE>% Send(NATIVE_TYPE* data, unsigned int element_count);
-		Variable<NATIVE_TYPE>% Block(bool enable);
-		String^ Type();
-		String^ Name();
+		}
 
-	};
+		void Call() {
+			try {
+				auto function = this->_instance.get();
+				(*function.get())();
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew String(e.what()));
 
+			}
+		}
 
-	#undef NATIVE_TYPE 
-	#define NATIVE_TYPE unsigned char
-	template <> public ref class Variable<NATIVE_TYPE> {
+		Function^ Complete() {
+			try {
+				this->_instance->complete();
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew String(e.what()));
+			}
 
-	private:
-		mananged_shared_ptr<spider::variable<NATIVE_TYPE>> _instance;
+			return this;
+		}
 
+		Function^ Args() {
+			try {
+				this->_instance->args();
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew String(e.what()));
+			}
 
-	public:
+			return this;
+		}
 
-		Variable(String^ name, SPIDER_MODE mode, SPIDER_ACCESS access);
-		Variable(String^ name, unsigned int element_count, unsigned int delay, SPIDER_MODE mode, SPIDER_ACCESS access);
-		Variable(String^ name, unsigned int delay, SPIDER_MODE mode, SPIDER_ACCESS access);
+		Function^ Returns() {
+			try {
+				this->_instance->returns();
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew String(e.what()));
+			}
 
-		~Variable();
-		!Variable();
+			return this;
+		}
 
-		void operator=(NATIVE_TYPE data);
-		void operator>>(NATIVE_TYPE% data);
-		Variable<NATIVE_TYPE>% Delay(unsigned int delay);
-		Variable<NATIVE_TYPE>% Receive(NATIVE_TYPE* data, unsigned int element_count);
-		Variable<NATIVE_TYPE>% Send(NATIVE_TYPE* data, unsigned int element_count);
-		Variable<NATIVE_TYPE>% Block(bool enable);
-		String^ Type();
-		String^ Name();
+		Function^ Delay(unsigned int delay) {
+			try {
+				this->_instance->delay(delay);
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew String(e.what()));
+			}
 
-	};
-
-
-	#undef NATIVE_TYPE 
-	#define NATIVE_TYPE int
-	template <> public ref class Variable<NATIVE_TYPE> {
-
-	private:
-		mananged_shared_ptr<spider::variable<NATIVE_TYPE>> _instance;
-
-
-	public:
-
-		Variable(String^ name, SPIDER_MODE mode, SPIDER_ACCESS access);
-		Variable(String^ name, unsigned int element_count, unsigned int delay, SPIDER_MODE mode, SPIDER_ACCESS access);
-		Variable(String^ name, unsigned int delay, SPIDER_MODE mode, SPIDER_ACCESS access);
-
-		~Variable();
-		!Variable();
-
-		void operator=(NATIVE_TYPE data);
-		void operator>>(NATIVE_TYPE% data);
-		Variable<NATIVE_TYPE>% Delay(unsigned int delay);
-		Variable<NATIVE_TYPE>% Receive(NATIVE_TYPE* data, unsigned int element_count);
-		Variable<NATIVE_TYPE>% Send(NATIVE_TYPE* data, unsigned int element_count);
-		Variable<NATIVE_TYPE>% Block(bool enable);
-		String^ Type();
-		String^ Name();
-
-	};
-
-	#undef NATIVE_TYPE 
-	#define NATIVE_TYPE unsigned int
-	template <> public ref class Variable<NATIVE_TYPE> {
-
-	private:
-		mananged_shared_ptr<spider::variable<NATIVE_TYPE>> _instance;
+			return this;
+		}
 
 
-	public:
+		Function^ Lock() {
+			try {
+				this->_instance->lock();
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew String(e.what()));
+			}
 
-		Variable(String^ name, SPIDER_MODE mode, SPIDER_ACCESS access);
-		Variable(String^ name, unsigned int element_count, unsigned int delay, SPIDER_MODE mode, SPIDER_ACCESS access);
-		Variable(String^ name, unsigned int delay, SPIDER_MODE mode, SPIDER_ACCESS access);
+			return this;
+		}
 
-		~Variable();
-		!Variable();
+		Function^ UnLock() {
+			try {
+				this->_instance->unlock();
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew String(e.what()));
+			}
 
-		void operator=(NATIVE_TYPE data);
-		void operator>>(NATIVE_TYPE% data);
-		Variable<NATIVE_TYPE>% Delay(unsigned int delay);
-		Variable<NATIVE_TYPE>% Receive(NATIVE_TYPE* data, unsigned int element_count);
-		Variable<NATIVE_TYPE>% Send(NATIVE_TYPE* data, unsigned int element_count);
-		Variable<NATIVE_TYPE>% Block(bool enable);
-		String^ Type();
-		String^ Name();
+			return this;
+		}
 
-	};
+		generic<typename T> Function^ Arg(String^ name) {
+			auto _name = msclr::interop::marshal_as<std::string>(name);
+			try {
+				if (T::typeid == System::Int32::typeid) {
+					this->_instance->arg<int>(_name);
+				}
+				else if (T::typeid == System::UInt32::typeid) {
 
+				}
+				else if (T::typeid == System::Double::typeid) {
+
+				}
+				else if (T::typeid == System::Byte::typeid) {
+
+				}
+				else if (T::typeid == System::SByte::typeid) {
+
+				}
+				else {
+					throw std::exception("Type not support");
+				}
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew String(e.what()));
+			}
+			
+		}
 
 	
+	};
 }
 
 #endif

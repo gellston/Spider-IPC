@@ -12,6 +12,8 @@ using namespace System;
 
 
 //////////////////////////////////////////////////
+
+/*
 #undef NATIVE_TYPE 
 #define NATIVE_TYPE double
 SPIDER::Variable<NATIVE_TYPE>::Variable(String^ name, SPIDER_MODE mode , SPIDER_ACCESS access) {
@@ -425,3 +427,4 @@ String^ SPIDER::Variable<NATIVE_TYPE>::Name() {
 	return temp;
 
 }
+*/
