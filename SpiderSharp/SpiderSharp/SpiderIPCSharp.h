@@ -1,6 +1,10 @@
 #ifndef SPIDER_IPC_SHARP
 #define SPIDER_IPC_SHARP
 
+
+#include <iostream>
+
+
 #include <SpiderIPC.h>
 
 #include "managed_shared_ptr.h"
@@ -9,7 +13,7 @@ using namespace System;
 using namespace System::Collections;
 using namespace System::Collections::Generic;
 using namespace System::Runtime::InteropServices;
-
+using namespace System::Threading;
 
 namespace SPIDER {
 
@@ -382,6 +386,10 @@ namespace SPIDER {
 
 	private:
 
+
+		bool IsWorking;
+
+
 		FunctionTrace^ _functionTrace;
 		NativeFunctionTrace^ _nativeFunctionTrace;
 		IntPtr NativeCallbackHandle;
@@ -393,12 +401,30 @@ namespace SPIDER {
 
 
 		void NativeCallback(spider::function * callback) {
-			this->_functionTrace->Invoke(this);
+			try {
+				this->_functionTrace->Invoke(this);
+			}
+			catch (Exception^ e) {
+				System::Console::WriteLine(e->Message);
+			}
+			
 		}
 
 		void SharpCallback(Function^ instance) {
 
 		}
+
+		//void ThreadLoop() {
+		//	while (this->IsWorking) {
+		//		try {
+		//			this->_functionTrace->Invoke(this);
+		//		}
+		//		catch (Exception^ e) {
+		//			Diagnostics::Debug::WriteLine(e->Message);
+		//		}
+		//		
+		//	}
+		//}
 
 	public:
 
@@ -424,7 +450,9 @@ namespace SPIDER {
 		Function(String^ name, FunctionTrace^ delegate) {
 			try {
 				auto _name = msclr::interop::marshal_as<std::string>(name);
-				
+
+
+				this->IsWorking = true;
 
 				this->_functionTrace = gcnew FunctionTrace(this, &SPIDER::Function::SharpCallback);
 				this->BlockGCHandleSharp = GCHandle::Alloc(this->_functionTrace);
@@ -440,7 +468,7 @@ namespace SPIDER {
 
 
 				this->_instance = new spider::function(_name, native_pointer);
-
+				std::cout << "native name : " << _name << std::endl;
 			}
 			catch (std::exception e) {
 				throw gcnew Exception(gcnew String(e.what()));
@@ -448,10 +476,11 @@ namespace SPIDER {
 		}
 
 		~Function() {
-
+			this->IsWorking = false;
+	
 		}
 		!Function() {
-
+			this->IsWorking = false;
 		}
 
 		void Call() {
@@ -784,7 +813,7 @@ namespace SPIDER {
 			return this;
 		}
 
-		generic<typename T> Function^ Get(String^ name, unsigned char% value) {
+		generic<typename T> Function^ Get(String^ name, [Out]unsigned char% value) {
 			typedef unsigned char uchar;
 			auto _name = msclr::interop::marshal_as<std::string>(name);
 			try {

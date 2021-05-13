@@ -1978,7 +1978,7 @@ spider::function::function(std::string name, std::function<void(spider::function
 
 
 	worker = std::move(std::thread([&](){
-		while (true) {
+		while (this->is_working) {
 
 			try {
 
@@ -2011,7 +2011,8 @@ spider::function::function(std::string name, std::function<void(spider::function
 				
 				switch (write_handle_ret) {
 				case WAIT_OBJECT_0:
-					this->lambda(this);
+					if(this->is_complete == true)
+						this->lambda(this);
 					break;
 				case WAIT_TIMEOUT:
 					throw std::exception("Time out");
@@ -2035,6 +2036,14 @@ spider::function::function(std::string name, std::function<void(spider::function
 
 spider::function::~function() {
 	this->is_working = false;
+
+
+	//if (this->mode == spider::spider_call_mode::subscriber) {
+	//	if(this->worker.joinable())
+	//		this->worker.join();
+	//}
+
+
 	if(this->pimpl->function_start_handle != nullptr)
 		CloseHandle(this->pimpl->function_start_handle);
 

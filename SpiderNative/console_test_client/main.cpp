@@ -22,10 +22,8 @@ int main() {
 				.get("argument1", &argument1)
 				.get("argument2", &argument2);
 
-
-
 			int result = argument1 + argument2;
-			//std::cout << "calculated value = " << result << std::endl;
+
 			function->returns()
 				.push("returnValue", result);
 
