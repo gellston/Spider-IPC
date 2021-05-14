@@ -7,7 +7,8 @@
 /// </summary>
 /// 
 int main() {
-	spider::function notifier("test", [&](spider::function* function) {
+
+	std::function<void(spider::function* function)> function = [&](spider::function* function) {
 		try {
 			int argument1 = 0;
 			int argument2 = 0;
@@ -22,7 +23,9 @@ int main() {
 			std::cout << e.what() << std::endl;
 		}
 
-	});
+	};
+
+	spider::function notifier("test", function);
 	notifier
 		.args()
 		.arg<int>("argument1")
@@ -30,6 +33,8 @@ int main() {
 		.returns()
 		.ret<int>("returnValue")
 		.complete();
+
+
 
 	while (true) {
 		getchar();
