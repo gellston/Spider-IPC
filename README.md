@@ -10,10 +10,10 @@ This library provides remote function calls and variable sharing functions
 This library was developed and modified with Visual Studio 2019 <br>
 
 # Download
-[Download C++ v120-x86 version ](https://github.com/gellston/Spider-IPC/lib/SpiderNative-x86-v120.zip)<br>
-[Download C++ v120-x64 version](https://github.com/gellston/Spider-IPC/lib/SpiderNative-x64-v120.zip) <br>
-[Download C++ v142-x64-windows10 version](https://github.com/gellston/Spider-IPC/lib/SpiderNative-x64-v120-windows10.zip) <br>
-[Download C# NetCore3.1-x64-windows10 version](https://github.com/gellston/Spider-IPC/lib/SpiderSharp-x64-NetCore3.1-windows10.zip) <br>
+[Download C++ v120-x86 version ](https://github.com/gellston/Spider-IPC/raw/main/lib/SpiderNative-x86-v120.zip)<br>
+[Download C++ v120-x64 version](https://github.com/gellston/Spider-IPC/raw/main/lib/SpiderNative-x64-v120.zip) <br>
+[Download C++ v142-x64-windows10 version](https://github.com/gellston/Spider-IPC/raw/main/lib/SpiderNative-x64-v142-windows10.zip) <br>
+[Download C# NetCore3.1-x64-windows10 version](https://github.com/gellston/Spider-IPC/raw/main/lib/SpiderSharp-x64-NetCore3.1-windows10.zip) <br>
 
 
 # Getting Started 
