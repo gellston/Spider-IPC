@@ -5,7 +5,7 @@
 #include <iostream>
 #include <filesystem>
 #include <functional>
-
+#include <unordered_map>
 
 namespace spider {
 	class spider_pimpl {
@@ -18,6 +18,9 @@ namespace spider {
 		HANDLE  function_start_handle;
 		HANDLE  function_end_handle;
 		HANDLE  function_blocker;
+		std::unordered_map<std::string, std::shared_ptr<Ivariable>> arguments;
+		std::unordered_map<std::string, std::shared_ptr<Ivariable>> return_list;
+
 
 		spider_pimpl() {
 			this->shmem = INVALID_HANDLE_VALUE;
@@ -266,7 +269,7 @@ void spider::variable<native_type>::operator=(native_type data) {
 	if (this->is_block == true) {
 		spider_raii raii([&] {
 			SetEvent(this->pimpl->event_write_handle);
-			});
+		});
 
 		DWORD write_handle_ret = WaitForSingleObject(this->pimpl->event_write_handle, this->delay_time);
 		ResetEvent(this->pimpl->event_write_handle);
@@ -2038,12 +2041,6 @@ spider::function::~function() {
 	this->is_working = false;
 
 
-	//if (this->mode == spider::spider_call_mode::subscriber) {
-	//	if(this->worker.joinable())
-	//		this->worker.join();
-	//}
-
-
 	if(this->pimpl->function_start_handle != nullptr)
 		CloseHandle(this->pimpl->function_start_handle);
 
@@ -2128,23 +2125,34 @@ template<> spider::function& spider::function::arg<native_type>(std::string name
 	if (this->is_complete == true) throw std::exception("Registration completed");
 	std::string type_name = this->_name + "_";
 	type_name += name;
-	for (auto& element : this->arguments) {
-		if (element->name().compare(type_name) == 0)
-			throw std::exception("Duplicate key");
-	}
+
+
+	if(this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end())
+		throw std::exception("Duplicate key");
+
 	try {
-		if (mode == spider::spider_call_mode::subscriber) {
-			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
-			variable->block(false);
-			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->arguments.push_back(temp);
+		switch (mode)
+		{
+			case spider::subscriber: {
+				std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
+				variable->block(false);
+				auto temp = std::static_pointer_cast<Ivariable>(variable);
+				this->pimpl->arguments[type_name] = temp;
+				break;
+			}
+
+			case spider::notifier: {
+				std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
+				variable->block(false);
+				auto temp = std::static_pointer_cast<Ivariable>(variable);
+				this->pimpl->arguments[type_name] = temp;
+				break;
+			}
+
+		default:
+			break;
 		}
-		else if (mode == spider::spider_call_mode::notifier) {
-			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
-			variable->block(false);
-			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->arguments.push_back(temp);
-		}
+
 	}
 	catch (std::exception e) {
 		throw e;
@@ -2157,22 +2165,31 @@ template<> spider::function& spider::function::arg<native_type>(std::string name
 	if (this->is_complete == true) throw std::exception("Registration completed");
 	std::string type_name = this->_name + "_";
 	type_name += name;
-	for (auto& element : this->arguments) {
-		if (element->name().compare(type_name) == 0)
-			throw std::exception("Duplicate key");
-	}
+
+	if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end())
+		throw std::exception("Duplicate key");
+
 	try {
-		if (mode == spider::spider_call_mode::subscriber) {
+		switch (mode)
+		{
+		case spider::subscriber: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->arguments.push_back(temp);
+			this->pimpl->arguments[type_name] = temp;
+			break;
 		}
-		else if (mode == spider::spider_call_mode::notifier) {
+			
+		case spider::notifier: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->arguments.push_back(temp);
+			this->pimpl->arguments[type_name] = temp;
+			break;
+		}
+			
+		default:
+			break;
 		}
 	}
 	catch (std::exception e) {
@@ -2186,22 +2203,29 @@ template<> spider::function& spider::function::ret<native_type>(std::string name
 	if (this->is_complete == true) throw std::exception("Registration completed");
 	std::string type_name = this->_name + "_";
 	type_name += name;
-	for (auto& element : this->return_list) {
-		if (element->name().compare(type_name) == 0)
-			throw std::exception("Duplicate key");
-	}
+	if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end())
+		throw std::exception("Duplicate key");
 	try {
-		if (mode == spider::spider_call_mode::subscriber) {
+		switch (mode)
+		{
+		case spider::subscriber: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->return_list.push_back(temp);
+			this->pimpl->return_list[type_name] = temp;
+			break;
 		}
-		else if (mode == spider::spider_call_mode::notifier) {
+			
+		case spider::notifier: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->return_list.push_back(temp);
+			this->pimpl->return_list[type_name] = temp;
+			break;
+		}
+			
+		default:
+			break;
 		}
 	}
 	catch (std::exception e) {
@@ -2215,22 +2239,29 @@ template<> spider::function& spider::function::ret<native_type>(std::string name
 	if (this->is_complete == true) throw std::exception("Registration completed");
 	std::string type_name = this->_name + "_";
 	type_name += name;
-	for (auto& element : this->return_list) {
-		if (element->name().compare(type_name) == 0)
-			throw std::exception("Duplicate key");
-	}
+	if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end())
+		throw std::exception("Duplicate key");
 	try {
-		if (mode == spider::spider_call_mode::subscriber) {
+		switch (mode)
+		{
+		case spider::subscriber: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->return_list.push_back(temp);
+			this->pimpl->return_list[type_name] = temp;
+			break;
 		}
-		else if (mode == spider::spider_call_mode::notifier) {
+			
+		case spider::notifier: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->return_list.push_back(temp);
+			this->pimpl->return_list[type_name] = temp;
+			break;
+		}
+			
+		default:
+			break;
 		}
 	}
 	catch (std::exception e) {
@@ -2262,12 +2293,13 @@ template<> spider::function& spider::function::push<native_type>(std::string nam
 			std::string type_name = this->_name + "_";
 			type_name += name;
 
-			for (auto& element : this->arguments) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					(*temp.get()) = value;
-				}
+
+			if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end()) {
+				auto variable = this->pimpl->arguments[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				(*temp.get()) = value;
 			}
+
 		}
 		catch (std::exception e) {
 			throw e;
@@ -2278,11 +2310,10 @@ template<> spider::function& spider::function::push<native_type>(std::string nam
 			std::string type_name = this->_name + "_";
 			type_name += name;
 
-			for (auto& element : this->return_list) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					(*temp.get()) = value;
-				}
+			if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end()) {
+				auto variable = this->pimpl->return_list[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				(*temp.get()) = value;
 			}
 		}
 		catch (std::exception e) {
@@ -2316,11 +2347,10 @@ template<> spider::function& spider::function::push<native_type>(std::string nam
 			std::string type_name = this->_name + "_";
 			type_name += name;
 
-			for (auto& element : this->arguments) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->send(value, element_count);
-				}
+			if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end()) {
+				auto variable = this->pimpl->arguments[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->send(value, element_count);
 			}
 		}
 		catch (std::exception e) {
@@ -2332,11 +2362,10 @@ template<> spider::function& spider::function::push<native_type>(std::string nam
 			std::string type_name = this->_name + "_";
 			type_name += name;
 
-			for (auto& element : this->return_list) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->send(value, element_count);
-				}
+			if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end()) {
+				auto variable = this->pimpl->return_list[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->send(value, element_count);
 			}
 		}
 		catch (std::exception e) {
@@ -2353,11 +2382,10 @@ template<> spider::function& spider::function::get<native_type>(std::string name
 		try {
 			std::string type_name = this->_name + "_";
 			type_name += name;
-			for (auto& element : this->arguments) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->receive(value, 1);
-				}
+			if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end()) {
+				auto variable = this->pimpl->arguments[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->receive(value, 1);
 			}
 		}
 		catch (std::exception e) {
@@ -2385,11 +2413,10 @@ template<> spider::function& spider::function::get<native_type>(std::string name
 
 			std::string type_name = this->_name + "_";
 			type_name += name;
-			for (auto& element : this->return_list) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->receive(value, 1);
-				}
+			if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end()) {
+				auto variable = this->pimpl->return_list[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->receive(value, 1);
 			}
 		}
 		catch (std::exception e) {
@@ -2404,11 +2431,10 @@ template<> spider::function& spider::function::get<native_type>(std::string name
 		try {
 			std::string type_name = this->_name + "_";
 			type_name += name;
-			for (auto& element : this->arguments) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->receive(value, element_count);
-				}
+			if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end()) {
+				auto variable = this->pimpl->arguments[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->receive(value, element_count);
 			}
 		}
 		catch (std::exception e) {
@@ -2437,11 +2463,10 @@ template<> spider::function& spider::function::get<native_type>(std::string name
 
 			std::string type_name = this->_name + "_";
 			type_name += name;
-			for (auto& element : this->return_list) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->receive(value, element_count);
-				}
+			if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end()) {
+				auto variable = this->pimpl->return_list[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->receive(value, element_count);
 			}
 		}
 		catch (std::exception e) {
@@ -2459,23 +2484,34 @@ template<> spider::function& spider::function::arg<native_type>(std::string name
 	if (this->is_complete == true) throw std::exception("Registration completed");
 	std::string type_name = this->_name + "_";
 	type_name += name;
-	for (auto& element : this->arguments) {
-		if (element->name().compare(type_name) == 0)
-			throw std::exception("Duplicate key");
-	}
+
+
+	if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end())
+		throw std::exception("Duplicate key");
+
 	try {
-		if (mode == spider::spider_call_mode::subscriber) {
+		switch (mode)
+		{
+		case spider::subscriber: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->arguments.push_back(temp);
+			this->pimpl->arguments[type_name] = temp;
+			break;
 		}
-		else if (mode == spider::spider_call_mode::notifier) {
+
+		case spider::notifier: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->arguments.push_back(temp);
+			this->pimpl->arguments[type_name] = temp;
+			break;
 		}
+
+		default:
+			break;
+		}
+
 	}
 	catch (std::exception e) {
 		throw e;
@@ -2488,22 +2524,31 @@ template<> spider::function& spider::function::arg<native_type>(std::string name
 	if (this->is_complete == true) throw std::exception("Registration completed");
 	std::string type_name = this->_name + "_";
 	type_name += name;
-	for (auto& element : this->arguments) {
-		if (element->name().compare(type_name) == 0)
-			throw std::exception("Duplicate key");
-	}
+
+	if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end())
+		throw std::exception("Duplicate key");
+
 	try {
-		if (mode == spider::spider_call_mode::subscriber) {
+		switch (mode)
+		{
+		case spider::subscriber: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->arguments.push_back(temp);
+			this->pimpl->arguments[type_name] = temp;
+			break;
 		}
-		else if (mode == spider::spider_call_mode::notifier) {
+
+		case spider::notifier: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->arguments.push_back(temp);
+			this->pimpl->arguments[type_name] = temp;
+			break;
+		}
+
+		default:
+			break;
 		}
 	}
 	catch (std::exception e) {
@@ -2517,22 +2562,29 @@ template<> spider::function& spider::function::ret<native_type>(std::string name
 	if (this->is_complete == true) throw std::exception("Registration completed");
 	std::string type_name = this->_name + "_";
 	type_name += name;
-	for (auto& element : this->return_list) {
-		if (element->name().compare(type_name) == 0)
-			throw std::exception("Duplicate key");
-	}
+	if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end())
+		throw std::exception("Duplicate key");
 	try {
-		if (mode == spider::spider_call_mode::subscriber) {
+		switch (mode)
+		{
+		case spider::subscriber: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->return_list.push_back(temp);
+			this->pimpl->return_list[type_name] = temp;
+			break;
 		}
-		else if (mode == spider::spider_call_mode::notifier) {
+
+		case spider::notifier: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->return_list.push_back(temp);
+			this->pimpl->return_list[type_name] = temp;
+			break;
+		}
+
+		default:
+			break;
 		}
 	}
 	catch (std::exception e) {
@@ -2546,22 +2598,29 @@ template<> spider::function& spider::function::ret<native_type>(std::string name
 	if (this->is_complete == true) throw std::exception("Registration completed");
 	std::string type_name = this->_name + "_";
 	type_name += name;
-	for (auto& element : this->return_list) {
-		if (element->name().compare(type_name) == 0)
-			throw std::exception("Duplicate key");
-	}
+	if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end())
+		throw std::exception("Duplicate key");
 	try {
-		if (mode == spider::spider_call_mode::subscriber) {
+		switch (mode)
+		{
+		case spider::subscriber: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->return_list.push_back(temp);
+			this->pimpl->return_list[type_name] = temp;
+			break;
 		}
-		else if (mode == spider::spider_call_mode::notifier) {
+
+		case spider::notifier: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->return_list.push_back(temp);
+			this->pimpl->return_list[type_name] = temp;
+			break;
+		}
+
+		default:
+			break;
 		}
 	}
 	catch (std::exception e) {
@@ -2593,12 +2652,13 @@ template<> spider::function& spider::function::push<native_type>(std::string nam
 			std::string type_name = this->_name + "_";
 			type_name += name;
 
-			for (auto& element : this->arguments) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					(*temp.get()) = value;
-				}
+
+			if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end()) {
+				auto variable = this->pimpl->arguments[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				(*temp.get()) = value;
 			}
+
 		}
 		catch (std::exception e) {
 			throw e;
@@ -2609,11 +2669,10 @@ template<> spider::function& spider::function::push<native_type>(std::string nam
 			std::string type_name = this->_name + "_";
 			type_name += name;
 
-			for (auto& element : this->return_list) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					(*temp.get()) = value;
-				}
+			if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end()) {
+				auto variable = this->pimpl->return_list[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				(*temp.get()) = value;
 			}
 		}
 		catch (std::exception e) {
@@ -2647,11 +2706,10 @@ template<> spider::function& spider::function::push<native_type>(std::string nam
 			std::string type_name = this->_name + "_";
 			type_name += name;
 
-			for (auto& element : this->arguments) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->send(value, element_count);
-				}
+			if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end()) {
+				auto variable = this->pimpl->arguments[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->send(value, element_count);
 			}
 		}
 		catch (std::exception e) {
@@ -2663,11 +2721,10 @@ template<> spider::function& spider::function::push<native_type>(std::string nam
 			std::string type_name = this->_name + "_";
 			type_name += name;
 
-			for (auto& element : this->return_list) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->send(value, element_count);
-				}
+			if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end()) {
+				auto variable = this->pimpl->return_list[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->send(value, element_count);
 			}
 		}
 		catch (std::exception e) {
@@ -2684,11 +2741,10 @@ template<> spider::function& spider::function::get<native_type>(std::string name
 		try {
 			std::string type_name = this->_name + "_";
 			type_name += name;
-			for (auto& element : this->arguments) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->receive(value, 1);
-				}
+			if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end()) {
+				auto variable = this->pimpl->arguments[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->receive(value, 1);
 			}
 		}
 		catch (std::exception e) {
@@ -2716,11 +2772,10 @@ template<> spider::function& spider::function::get<native_type>(std::string name
 
 			std::string type_name = this->_name + "_";
 			type_name += name;
-			for (auto& element : this->return_list) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->receive(value, 1);
-				}
+			if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end()) {
+				auto variable = this->pimpl->return_list[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->receive(value, 1);
 			}
 		}
 		catch (std::exception e) {
@@ -2735,11 +2790,10 @@ template<> spider::function& spider::function::get<native_type>(std::string name
 		try {
 			std::string type_name = this->_name + "_";
 			type_name += name;
-			for (auto& element : this->arguments) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->receive(value, element_count);
-				}
+			if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end()) {
+				auto variable = this->pimpl->arguments[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->receive(value, element_count);
 			}
 		}
 		catch (std::exception e) {
@@ -2768,11 +2822,10 @@ template<> spider::function& spider::function::get<native_type>(std::string name
 
 			std::string type_name = this->_name + "_";
 			type_name += name;
-			for (auto& element : this->return_list) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->receive(value, element_count);
-				}
+			if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end()) {
+				auto variable = this->pimpl->return_list[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->receive(value, element_count);
 			}
 		}
 		catch (std::exception e) {
@@ -2789,23 +2842,34 @@ template<> spider::function& spider::function::arg<native_type>(std::string name
 	if (this->is_complete == true) throw std::exception("Registration completed");
 	std::string type_name = this->_name + "_";
 	type_name += name;
-	for (auto& element : this->arguments) {
-		if (element->name().compare(type_name) == 0)
-			throw std::exception("Duplicate key");
-	}
+
+
+	if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end())
+		throw std::exception("Duplicate key");
+
 	try {
-		if (mode == spider::spider_call_mode::subscriber) {
+		switch (mode)
+		{
+		case spider::subscriber: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->arguments.push_back(temp);
+			this->pimpl->arguments[type_name] = temp;
+			break;
 		}
-		else if (mode == spider::spider_call_mode::notifier) {
+
+		case spider::notifier: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->arguments.push_back(temp);
+			this->pimpl->arguments[type_name] = temp;
+			break;
 		}
+
+		default:
+			break;
+		}
+
 	}
 	catch (std::exception e) {
 		throw e;
@@ -2818,22 +2882,31 @@ template<> spider::function& spider::function::arg<native_type>(std::string name
 	if (this->is_complete == true) throw std::exception("Registration completed");
 	std::string type_name = this->_name + "_";
 	type_name += name;
-	for (auto& element : this->arguments) {
-		if (element->name().compare(type_name) == 0)
-			throw std::exception("Duplicate key");
-	}
+
+	if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end())
+		throw std::exception("Duplicate key");
+
 	try {
-		if (mode == spider::spider_call_mode::subscriber) {
+		switch (mode)
+		{
+		case spider::subscriber: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->arguments.push_back(temp);
+			this->pimpl->arguments[type_name] = temp;
+			break;
 		}
-		else if (mode == spider::spider_call_mode::notifier) {
+
+		case spider::notifier: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->arguments.push_back(temp);
+			this->pimpl->arguments[type_name] = temp;
+			break;
+		}
+
+		default:
+			break;
 		}
 	}
 	catch (std::exception e) {
@@ -2847,22 +2920,29 @@ template<> spider::function& spider::function::ret<native_type>(std::string name
 	if (this->is_complete == true) throw std::exception("Registration completed");
 	std::string type_name = this->_name + "_";
 	type_name += name;
-	for (auto& element : this->return_list) {
-		if (element->name().compare(type_name) == 0)
-			throw std::exception("Duplicate key");
-	}
+	if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end())
+		throw std::exception("Duplicate key");
 	try {
-		if (mode == spider::spider_call_mode::subscriber) {
+		switch (mode)
+		{
+		case spider::subscriber: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->return_list.push_back(temp);
+			this->pimpl->return_list[type_name] = temp;
+			break;
 		}
-		else if (mode == spider::spider_call_mode::notifier) {
+
+		case spider::notifier: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->return_list.push_back(temp);
+			this->pimpl->return_list[type_name] = temp;
+			break;
+		}
+
+		default:
+			break;
 		}
 	}
 	catch (std::exception e) {
@@ -2876,22 +2956,29 @@ template<> spider::function& spider::function::ret<native_type>(std::string name
 	if (this->is_complete == true) throw std::exception("Registration completed");
 	std::string type_name = this->_name + "_";
 	type_name += name;
-	for (auto& element : this->return_list) {
-		if (element->name().compare(type_name) == 0)
-			throw std::exception("Duplicate key");
-	}
+	if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end())
+		throw std::exception("Duplicate key");
 	try {
-		if (mode == spider::spider_call_mode::subscriber) {
+		switch (mode)
+		{
+		case spider::subscriber: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->return_list.push_back(temp);
+			this->pimpl->return_list[type_name] = temp;
+			break;
 		}
-		else if (mode == spider::spider_call_mode::notifier) {
+
+		case spider::notifier: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->return_list.push_back(temp);
+			this->pimpl->return_list[type_name] = temp;
+			break;
+		}
+
+		default:
+			break;
 		}
 	}
 	catch (std::exception e) {
@@ -2923,12 +3010,13 @@ template<> spider::function& spider::function::push<native_type>(std::string nam
 			std::string type_name = this->_name + "_";
 			type_name += name;
 
-			for (auto& element : this->arguments) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					(*temp.get()) = value;
-				}
+
+			if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end()) {
+				auto variable = this->pimpl->arguments[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				(*temp.get()) = value;
 			}
+
 		}
 		catch (std::exception e) {
 			throw e;
@@ -2939,11 +3027,10 @@ template<> spider::function& spider::function::push<native_type>(std::string nam
 			std::string type_name = this->_name + "_";
 			type_name += name;
 
-			for (auto& element : this->return_list) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					(*temp.get()) = value;
-				}
+			if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end()) {
+				auto variable = this->pimpl->return_list[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				(*temp.get()) = value;
 			}
 		}
 		catch (std::exception e) {
@@ -2977,11 +3064,10 @@ template<> spider::function& spider::function::push<native_type>(std::string nam
 			std::string type_name = this->_name + "_";
 			type_name += name;
 
-			for (auto& element : this->arguments) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->send(value, element_count);
-				}
+			if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end()) {
+				auto variable = this->pimpl->arguments[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->send(value, element_count);
 			}
 		}
 		catch (std::exception e) {
@@ -2993,11 +3079,10 @@ template<> spider::function& spider::function::push<native_type>(std::string nam
 			std::string type_name = this->_name + "_";
 			type_name += name;
 
-			for (auto& element : this->return_list) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->send(value, element_count);
-				}
+			if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end()) {
+				auto variable = this->pimpl->return_list[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->send(value, element_count);
 			}
 		}
 		catch (std::exception e) {
@@ -3014,11 +3099,10 @@ template<> spider::function& spider::function::get<native_type>(std::string name
 		try {
 			std::string type_name = this->_name + "_";
 			type_name += name;
-			for (auto& element : this->arguments) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->receive(value, 1);
-				}
+			if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end()) {
+				auto variable = this->pimpl->arguments[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->receive(value, 1);
 			}
 		}
 		catch (std::exception e) {
@@ -3046,11 +3130,10 @@ template<> spider::function& spider::function::get<native_type>(std::string name
 
 			std::string type_name = this->_name + "_";
 			type_name += name;
-			for (auto& element : this->return_list) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->receive(value, 1);
-				}
+			if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end()) {
+				auto variable = this->pimpl->return_list[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->receive(value, 1);
 			}
 		}
 		catch (std::exception e) {
@@ -3065,11 +3148,10 @@ template<> spider::function& spider::function::get<native_type>(std::string name
 		try {
 			std::string type_name = this->_name + "_";
 			type_name += name;
-			for (auto& element : this->arguments) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->receive(value, element_count);
-				}
+			if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end()) {
+				auto variable = this->pimpl->arguments[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->receive(value, element_count);
 			}
 		}
 		catch (std::exception e) {
@@ -3098,341 +3180,10 @@ template<> spider::function& spider::function::get<native_type>(std::string name
 
 			std::string type_name = this->_name + "_";
 			type_name += name;
-			for (auto& element : this->return_list) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->receive(value, element_count);
-				}
-			}
-		}
-		catch (std::exception e) {
-			throw e;
-		}
-	}
-	return *this;
-}
-
-#undef native_type
-#define native_type unsigned int
-template<> spider::function& spider::function::arg<native_type>(std::string name) {
-	if (this->is_args == false) throw std::exception("Need args mode on");
-	if (this->is_complete == true) throw std::exception("Registration completed");
-	std::string type_name = this->_name + "_";
-	type_name += name;
-	for (auto& element : this->arguments) {
-		if (element->name().compare(type_name) == 0)
-			throw std::exception("Duplicate key");
-	}
-	try {
-		if (mode == spider::spider_call_mode::subscriber) {
-			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
-			variable->block(false);
-			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->arguments.push_back(temp);
-		}
-		else if (mode == spider::spider_call_mode::notifier) {
-			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
-			variable->block(false);
-			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->arguments.push_back(temp);
-		}
-	}
-	catch (std::exception e) {
-		throw e;
-	}
-
-	return *this;
-}
-template<> spider::function& spider::function::arg<native_type>(std::string name, unsigned int element_count) {
-	if (this->is_args == false) throw std::exception("Need args mode on");
-	if (this->is_complete == true) throw std::exception("Registration completed");
-	std::string type_name = this->_name + "_";
-	type_name += name;
-	for (auto& element : this->arguments) {
-		if (element->name().compare(type_name) == 0)
-			throw std::exception("Duplicate key");
-	}
-	try {
-		if (mode == spider::spider_call_mode::subscriber) {
-			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
-			variable->block(false);
-			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->arguments.push_back(temp);
-		}
-		else if (mode == spider::spider_call_mode::notifier) {
-			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
-			variable->block(false);
-			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->arguments.push_back(temp);
-		}
-	}
-	catch (std::exception e) {
-		throw e;
-	}
-
-	return *this;
-}
-template<> spider::function& spider::function::ret<native_type>(std::string name) {
-	if (this->is_returns == false) throw std::exception("Need return mode on");
-	if (this->is_complete == true) throw std::exception("Registration completed");
-	std::string type_name = this->_name + "_";
-	type_name += name;
-	for (auto& element : this->return_list) {
-		if (element->name().compare(type_name) == 0)
-			throw std::exception("Duplicate key");
-	}
-	try {
-		if (mode == spider::spider_call_mode::subscriber) {
-			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
-			variable->block(false);
-			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->return_list.push_back(temp);
-		}
-		else if (mode == spider::spider_call_mode::notifier) {
-			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
-			variable->block(false);
-			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->return_list.push_back(temp);
-		}
-	}
-	catch (std::exception e) {
-		throw e;
-	}
-
-	return *this;
-}
-template<> spider::function& spider::function::ret<native_type>(std::string name, unsigned int element_count) {
-	if (this->is_returns == false) throw std::exception("Need return mode on");
-	if (this->is_complete == true) throw std::exception("Registration completed");
-	std::string type_name = this->_name + "_";
-	type_name += name;
-	for (auto& element : this->return_list) {
-		if (element->name().compare(type_name) == 0)
-			throw std::exception("Duplicate key");
-	}
-	try {
-		if (mode == spider::spider_call_mode::subscriber) {
-			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(name, spider::spider_mode::create, spider::spider_access::read_write));
-			variable->block(false);
-			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->return_list.push_back(temp);
-		}
-		else if (mode == spider::spider_call_mode::notifier) {
-			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(name, spider::spider_mode::create, spider::spider_access::read_write));
-			variable->block(false);
-			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->return_list.push_back(temp);
-		}
-	}
-	catch (std::exception e) {
-		throw e;
-	}
-
-	return *this;
-}
-template<> spider::function& spider::function::push<native_type>(std::string name, native_type value) {
-	if (this->is_args == true) {
-		try {
-			spider::spider_raii raii_bloacker([&]() {
-				ReleaseMutex(this->pimpl->function_blocker);
-				});
-			DWORD blocker_ret = WaitForSingleObject(this->pimpl->function_blocker, INFINITE);
-			switch (blocker_ret) {
-			case WAIT_OBJECT_0:
-				break;
-			case WAIT_TIMEOUT:
-				throw std::exception("Time out");
-				break;
-			case WAIT_FAILED:
-				throw std::exception("Unexpected error");
-				break;
-			default:
-				break;
-			}
-
-			std::string type_name = this->_name + "_";
-			type_name += name;
-
-			for (auto& element : this->arguments) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					(*temp.get()) = value;
-				}
-			}
-		}
-		catch (std::exception e) {
-			throw e;
-		}
-	}
-	else if (this->is_returns == true) {
-		try {
-			std::string type_name = this->_name + "_";
-			type_name += name;
-
-			for (auto& element : this->return_list) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					(*temp.get()) = value;
-				}
-			}
-		}
-		catch (std::exception e) {
-			throw e;
-		}
-	}
-
-
-	return *this;
-}
-template<> spider::function& spider::function::push<native_type>(std::string name, native_type* value, unsigned int element_count) {
-	if (this->is_args == true) {
-		try {
-			spider::spider_raii raii_bloacker([&]() {
-				ReleaseMutex(this->pimpl->function_blocker);
-				});
-			DWORD blocker_ret = WaitForSingleObject(this->pimpl->function_blocker, INFINITE);
-			switch (blocker_ret) {
-			case WAIT_OBJECT_0:
-				break;
-			case WAIT_TIMEOUT:
-				throw std::exception("Time out");
-				break;
-			case WAIT_FAILED:
-				throw std::exception("Unexpected error");
-				break;
-			default:
-				break;
-			}
-
-			std::string type_name = this->_name + "_";
-			type_name += name;
-
-			for (auto& element : this->arguments) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->send(value, element_count);
-				}
-			}
-		}
-		catch (std::exception e) {
-			throw e;
-		}
-	}
-	else if (this->is_returns == true) {
-		try {
-			std::string type_name = this->_name + "_";
-			type_name += name;
-
-			for (auto& element : this->return_list) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->send(value, element_count);
-				}
-			}
-		}
-		catch (std::exception e) {
-			throw e;
-		}
-	}
-
-
-	return *this;
-}
-
-template<> spider::function& spider::function::get<native_type>(std::string name, native_type* value) {
-	if (this->is_args == true) {
-		try {
-			std::string type_name = this->_name + "_";
-			type_name += name;
-			for (auto& element : this->arguments) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->receive(value, 1);
-				}
-			}
-		}
-		catch (std::exception e) {
-			throw e;
-		}
-	}
-	else if (this->is_returns == true) {
-		try {
-			spider::spider_raii raii_bloacker([&]() {
-				ReleaseMutex(this->pimpl->function_blocker);
-				});
-			DWORD blocker_ret = WaitForSingleObject(this->pimpl->function_blocker, INFINITE);
-			switch (blocker_ret) {
-			case WAIT_OBJECT_0:
-				break;
-			case WAIT_TIMEOUT:
-				throw std::exception("Time out");
-				break;
-			case WAIT_FAILED:
-				throw std::exception("Unexpected error");
-				break;
-			default:
-				break;
-			}
-
-			std::string type_name = this->_name + "_";
-			type_name += name;
-			for (auto& element : this->return_list) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->receive(value, 1);
-				}
-			}
-		}
-		catch (std::exception e) {
-			throw e;
-		}
-	}
-
-	return *this;
-}
-template<> spider::function& spider::function::get<native_type>(std::string name, native_type* value, unsigned int element_count) {
-	if (this->is_args == true) {
-		try {
-			std::string type_name = this->_name + "_";
-			type_name += name;
-			for (auto& element : this->arguments) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->receive(value, element_count);
-				}
-			}
-		}
-		catch (std::exception e) {
-			throw e;
-		}
-
-	}
-	else if (this->is_returns == true) {
-		try {
-			spider::spider_raii raii_bloacker([&]() {
-				ReleaseMutex(this->pimpl->function_blocker);
-				});
-			DWORD blocker_ret = WaitForSingleObject(this->pimpl->function_blocker, INFINITE);
-			switch (blocker_ret) {
-			case WAIT_OBJECT_0:
-				break;
-			case WAIT_TIMEOUT:
-				throw std::exception("Time out");
-				break;
-			case WAIT_FAILED:
-				throw std::exception("Unexpected error");
-				break;
-			default:
-				break;
-			}
-
-			std::string type_name = this->_name + "_";
-			type_name += name;
-			for (auto& element : this->return_list) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->receive(value, element_count);
-				}
+			if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end()) {
+				auto variable = this->pimpl->return_list[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->receive(value, element_count);
 			}
 		}
 		catch (std::exception e) {
@@ -3449,23 +3200,34 @@ template<> spider::function& spider::function::arg<native_type>(std::string name
 	if (this->is_complete == true) throw std::exception("Registration completed");
 	std::string type_name = this->_name + "_";
 	type_name += name;
-	for (auto& element : this->arguments) {
-		if (element->name().compare(type_name) == 0)
-			throw std::exception("Duplicate key");
-	}
+
+
+	if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end())
+		throw std::exception("Duplicate key");
+
 	try {
-		if (mode == spider::spider_call_mode::subscriber) {
+		switch (mode)
+		{
+		case spider::subscriber: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->arguments.push_back(temp);
+			this->pimpl->arguments[type_name] = temp;
+			break;
 		}
-		else if (mode == spider::spider_call_mode::notifier) {
+
+		case spider::notifier: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->arguments.push_back(temp);
+			this->pimpl->arguments[type_name] = temp;
+			break;
 		}
+
+		default:
+			break;
+		}
+
 	}
 	catch (std::exception e) {
 		throw e;
@@ -3478,22 +3240,31 @@ template<> spider::function& spider::function::arg<native_type>(std::string name
 	if (this->is_complete == true) throw std::exception("Registration completed");
 	std::string type_name = this->_name + "_";
 	type_name += name;
-	for (auto& element : this->arguments) {
-		if (element->name().compare(type_name) == 0)
-			throw std::exception("Duplicate key");
-	}
+
+	if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end())
+		throw std::exception("Duplicate key");
+
 	try {
-		if (mode == spider::spider_call_mode::subscriber) {
+		switch (mode)
+		{
+		case spider::subscriber: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->arguments.push_back(temp);
+			this->pimpl->arguments[type_name] = temp;
+			break;
 		}
-		else if (mode == spider::spider_call_mode::notifier) {
+
+		case spider::notifier: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->arguments.push_back(temp);
+			this->pimpl->arguments[type_name] = temp;
+			break;
+		}
+
+		default:
+			break;
 		}
 	}
 	catch (std::exception e) {
@@ -3507,22 +3278,29 @@ template<> spider::function& spider::function::ret<native_type>(std::string name
 	if (this->is_complete == true) throw std::exception("Registration completed");
 	std::string type_name = this->_name + "_";
 	type_name += name;
-	for (auto& element : this->return_list) {
-		if (element->name().compare(type_name) == 0)
-			throw std::exception("Duplicate key");
-	}
+	if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end())
+		throw std::exception("Duplicate key");
 	try {
-		if (mode == spider::spider_call_mode::subscriber) {
+		switch (mode)
+		{
+		case spider::subscriber: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->return_list.push_back(temp);
+			this->pimpl->return_list[type_name] = temp;
+			break;
 		}
-		else if (mode == spider::spider_call_mode::notifier) {
+
+		case spider::notifier: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->return_list.push_back(temp);
+			this->pimpl->return_list[type_name] = temp;
+			break;
+		}
+
+		default:
+			break;
 		}
 	}
 	catch (std::exception e) {
@@ -3536,22 +3314,29 @@ template<> spider::function& spider::function::ret<native_type>(std::string name
 	if (this->is_complete == true) throw std::exception("Registration completed");
 	std::string type_name = this->_name + "_";
 	type_name += name;
-	for (auto& element : this->return_list) {
-		if (element->name().compare(type_name) == 0)
-			throw std::exception("Duplicate key");
-	}
+	if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end())
+		throw std::exception("Duplicate key");
 	try {
-		if (mode == spider::spider_call_mode::subscriber) {
+		switch (mode)
+		{
+		case spider::subscriber: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->return_list.push_back(temp);
+			this->pimpl->return_list[type_name] = temp;
+			break;
 		}
-		else if (mode == spider::spider_call_mode::notifier) {
+
+		case spider::notifier: {
 			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(name, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
-			this->return_list.push_back(temp);
+			this->pimpl->return_list[type_name] = temp;
+			break;
+		}
+
+		default:
+			break;
 		}
 	}
 	catch (std::exception e) {
@@ -3583,12 +3368,13 @@ template<> spider::function& spider::function::push<native_type>(std::string nam
 			std::string type_name = this->_name + "_";
 			type_name += name;
 
-			for (auto& element : this->arguments) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					(*temp.get()) = value;
-				}
+
+			if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end()) {
+				auto variable = this->pimpl->arguments[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				(*temp.get()) = value;
 			}
+
 		}
 		catch (std::exception e) {
 			throw e;
@@ -3599,11 +3385,10 @@ template<> spider::function& spider::function::push<native_type>(std::string nam
 			std::string type_name = this->_name + "_";
 			type_name += name;
 
-			for (auto& element : this->return_list) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					(*temp.get()) = value;
-				}
+			if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end()) {
+				auto variable = this->pimpl->return_list[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				(*temp.get()) = value;
 			}
 		}
 		catch (std::exception e) {
@@ -3637,11 +3422,10 @@ template<> spider::function& spider::function::push<native_type>(std::string nam
 			std::string type_name = this->_name + "_";
 			type_name += name;
 
-			for (auto& element : this->arguments) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->send(value, element_count);
-				}
+			if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end()) {
+				auto variable = this->pimpl->arguments[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->send(value, element_count);
 			}
 		}
 		catch (std::exception e) {
@@ -3653,11 +3437,10 @@ template<> spider::function& spider::function::push<native_type>(std::string nam
 			std::string type_name = this->_name + "_";
 			type_name += name;
 
-			for (auto& element : this->return_list) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->send(value, element_count);
-				}
+			if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end()) {
+				auto variable = this->pimpl->return_list[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->send(value, element_count);
 			}
 		}
 		catch (std::exception e) {
@@ -3674,11 +3457,10 @@ template<> spider::function& spider::function::get<native_type>(std::string name
 		try {
 			std::string type_name = this->_name + "_";
 			type_name += name;
-			for (auto& element : this->arguments) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->receive(value, 1);
-				}
+			if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end()) {
+				auto variable = this->pimpl->arguments[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->receive(value, 1);
 			}
 		}
 		catch (std::exception e) {
@@ -3706,11 +3488,10 @@ template<> spider::function& spider::function::get<native_type>(std::string name
 
 			std::string type_name = this->_name + "_";
 			type_name += name;
-			for (auto& element : this->return_list) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->receive(value, 1);
-				}
+			if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end()) {
+				auto variable = this->pimpl->return_list[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->receive(value, 1);
 			}
 		}
 		catch (std::exception e) {
@@ -3725,11 +3506,10 @@ template<> spider::function& spider::function::get<native_type>(std::string name
 		try {
 			std::string type_name = this->_name + "_";
 			type_name += name;
-			for (auto& element : this->arguments) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->receive(value, element_count);
-				}
+			if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end()) {
+				auto variable = this->pimpl->arguments[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->receive(value, element_count);
 			}
 		}
 		catch (std::exception e) {
@@ -3758,11 +3538,370 @@ template<> spider::function& spider::function::get<native_type>(std::string name
 
 			std::string type_name = this->_name + "_";
 			type_name += name;
-			for (auto& element : this->return_list) {
-				if (element->name().compare(type_name) == 0) {
-					auto temp = std::static_pointer_cast<spider::variable<native_type>>(element);
-					temp->receive(value, element_count);
-				}
+			if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end()) {
+				auto variable = this->pimpl->return_list[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->receive(value, element_count);
+			}
+		}
+		catch (std::exception e) {
+			throw e;
+		}
+	}
+	return *this;
+}
+
+
+
+#undef native_type
+#define native_type unsigned int
+template<> spider::function& spider::function::arg<native_type>(std::string name) {
+	if (this->is_args == false) throw std::exception("Need args mode on");
+	if (this->is_complete == true) throw std::exception("Registration completed");
+	std::string type_name = this->_name + "_";
+	type_name += name;
+
+
+	if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end())
+		throw std::exception("Duplicate key");
+
+	try {
+		switch (mode)
+		{
+		case spider::subscriber: {
+			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
+			variable->block(false);
+			auto temp = std::static_pointer_cast<Ivariable>(variable);
+			this->pimpl->arguments[type_name] = temp;
+			break;
+		}
+
+		case spider::notifier: {
+			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
+			variable->block(false);
+			auto temp = std::static_pointer_cast<Ivariable>(variable);
+			this->pimpl->arguments[type_name] = temp;
+			break;
+		}
+
+		default:
+			break;
+		}
+
+	}
+	catch (std::exception e) {
+		throw e;
+	}
+
+	return *this;
+}
+template<> spider::function& spider::function::arg<native_type>(std::string name, unsigned int element_count) {
+	if (this->is_args == false) throw std::exception("Need args mode on");
+	if (this->is_complete == true) throw std::exception("Registration completed");
+	std::string type_name = this->_name + "_";
+	type_name += name;
+
+	if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end())
+		throw std::exception("Duplicate key");
+
+	try {
+		switch (mode)
+		{
+		case spider::subscriber: {
+			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
+			variable->block(false);
+			auto temp = std::static_pointer_cast<Ivariable>(variable);
+			this->pimpl->arguments[type_name] = temp;
+			break;
+		}
+
+		case spider::notifier: {
+			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
+			variable->block(false);
+			auto temp = std::static_pointer_cast<Ivariable>(variable);
+			this->pimpl->arguments[type_name] = temp;
+			break;
+		}
+
+		default:
+			break;
+		}
+	}
+	catch (std::exception e) {
+		throw e;
+	}
+
+	return *this;
+}
+template<> spider::function& spider::function::ret<native_type>(std::string name) {
+	if (this->is_returns == false) throw std::exception("Need return mode on");
+	if (this->is_complete == true) throw std::exception("Registration completed");
+	std::string type_name = this->_name + "_";
+	type_name += name;
+	if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end())
+		throw std::exception("Duplicate key");
+	try {
+		switch (mode)
+		{
+		case spider::subscriber: {
+			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
+			variable->block(false);
+			auto temp = std::static_pointer_cast<Ivariable>(variable);
+			this->pimpl->return_list[type_name] = temp;
+			break;
+		}
+
+		case spider::notifier: {
+			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
+			variable->block(false);
+			auto temp = std::static_pointer_cast<Ivariable>(variable);
+			this->pimpl->return_list[type_name] = temp;
+			break;
+		}
+
+		default:
+			break;
+		}
+	}
+	catch (std::exception e) {
+		throw e;
+	}
+
+	return *this;
+}
+template<> spider::function& spider::function::ret<native_type>(std::string name, unsigned int element_count) {
+	if (this->is_returns == false) throw std::exception("Need return mode on");
+	if (this->is_complete == true) throw std::exception("Registration completed");
+	std::string type_name = this->_name + "_";
+	type_name += name;
+	if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end())
+		throw std::exception("Duplicate key");
+	try {
+		switch (mode)
+		{
+		case spider::subscriber: {
+			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(name, spider::spider_mode::create, spider::spider_access::read_write));
+			variable->block(false);
+			auto temp = std::static_pointer_cast<Ivariable>(variable);
+			this->pimpl->return_list[type_name] = temp;
+			break;
+		}
+
+		case spider::notifier: {
+			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(name, spider::spider_mode::create, spider::spider_access::read_write));
+			variable->block(false);
+			auto temp = std::static_pointer_cast<Ivariable>(variable);
+			this->pimpl->return_list[type_name] = temp;
+			break;
+		}
+
+		default:
+			break;
+		}
+	}
+	catch (std::exception e) {
+		throw e;
+	}
+
+	return *this;
+}
+template<> spider::function& spider::function::push<native_type>(std::string name, native_type value) {
+	if (this->is_args == true) {
+		try {
+			spider::spider_raii raii_bloacker([&]() {
+				ReleaseMutex(this->pimpl->function_blocker);
+				});
+			DWORD blocker_ret = WaitForSingleObject(this->pimpl->function_blocker, INFINITE);
+			switch (blocker_ret) {
+			case WAIT_OBJECT_0:
+				break;
+			case WAIT_TIMEOUT:
+				throw std::exception("Time out");
+				break;
+			case WAIT_FAILED:
+				throw std::exception("Unexpected error");
+				break;
+			default:
+				break;
+			}
+
+			std::string type_name = this->_name + "_";
+			type_name += name;
+
+
+			if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end()) {
+				auto variable = this->pimpl->arguments[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				(*temp.get()) = value;
+			}
+
+		}
+		catch (std::exception e) {
+			throw e;
+		}
+	}
+	else if (this->is_returns == true) {
+		try {
+			std::string type_name = this->_name + "_";
+			type_name += name;
+
+			if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end()) {
+				auto variable = this->pimpl->return_list[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				(*temp.get()) = value;
+			}
+		}
+		catch (std::exception e) {
+			throw e;
+		}
+	}
+
+
+	return *this;
+}
+template<> spider::function& spider::function::push<native_type>(std::string name, native_type* value, unsigned int element_count) {
+	if (this->is_args == true) {
+		try {
+			spider::spider_raii raii_bloacker([&]() {
+				ReleaseMutex(this->pimpl->function_blocker);
+				});
+			DWORD blocker_ret = WaitForSingleObject(this->pimpl->function_blocker, INFINITE);
+			switch (blocker_ret) {
+			case WAIT_OBJECT_0:
+				break;
+			case WAIT_TIMEOUT:
+				throw std::exception("Time out");
+				break;
+			case WAIT_FAILED:
+				throw std::exception("Unexpected error");
+				break;
+			default:
+				break;
+			}
+
+			std::string type_name = this->_name + "_";
+			type_name += name;
+
+			if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end()) {
+				auto variable = this->pimpl->arguments[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->send(value, element_count);
+			}
+		}
+		catch (std::exception e) {
+			throw e;
+		}
+	}
+	else if (this->is_returns == true) {
+		try {
+			std::string type_name = this->_name + "_";
+			type_name += name;
+
+			if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end()) {
+				auto variable = this->pimpl->return_list[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->send(value, element_count);
+			}
+		}
+		catch (std::exception e) {
+			throw e;
+		}
+	}
+
+
+	return *this;
+}
+
+template<> spider::function& spider::function::get<native_type>(std::string name, native_type* value) {
+	if (this->is_args == true) {
+		try {
+			std::string type_name = this->_name + "_";
+			type_name += name;
+			if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end()) {
+				auto variable = this->pimpl->arguments[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->receive(value, 1);
+			}
+		}
+		catch (std::exception e) {
+			throw e;
+		}
+	}
+	else if (this->is_returns == true) {
+		try {
+			spider::spider_raii raii_bloacker([&]() {
+				ReleaseMutex(this->pimpl->function_blocker);
+				});
+			DWORD blocker_ret = WaitForSingleObject(this->pimpl->function_blocker, INFINITE);
+			switch (blocker_ret) {
+			case WAIT_OBJECT_0:
+				break;
+			case WAIT_TIMEOUT:
+				throw std::exception("Time out");
+				break;
+			case WAIT_FAILED:
+				throw std::exception("Unexpected error");
+				break;
+			default:
+				break;
+			}
+
+			std::string type_name = this->_name + "_";
+			type_name += name;
+			if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end()) {
+				auto variable = this->pimpl->return_list[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->receive(value, 1);
+			}
+		}
+		catch (std::exception e) {
+			throw e;
+		}
+	}
+
+	return *this;
+}
+template<> spider::function& spider::function::get<native_type>(std::string name, native_type* value, unsigned int element_count) {
+	if (this->is_args == true) {
+		try {
+			std::string type_name = this->_name + "_";
+			type_name += name;
+			if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end()) {
+				auto variable = this->pimpl->arguments[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->receive(value, element_count);
+			}
+		}
+		catch (std::exception e) {
+			throw e;
+		}
+
+	}
+	else if (this->is_returns == true) {
+		try {
+			spider::spider_raii raii_bloacker([&]() {
+				ReleaseMutex(this->pimpl->function_blocker);
+				});
+			DWORD blocker_ret = WaitForSingleObject(this->pimpl->function_blocker, INFINITE);
+			switch (blocker_ret) {
+			case WAIT_OBJECT_0:
+				break;
+			case WAIT_TIMEOUT:
+				throw std::exception("Time out");
+				break;
+			case WAIT_FAILED:
+				throw std::exception("Unexpected error");
+				break;
+			default:
+				break;
+			}
+
+			std::string type_name = this->_name + "_";
+			type_name += name;
+			if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end()) {
+				auto variable = this->pimpl->return_list[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->receive(value, element_count);
 			}
 		}
 		catch (std::exception e) {

@@ -7,6 +7,7 @@
 #include <thread>
 #include <mutex>
 
+
 #pragma warning(disable : 4251)
 
 #ifdef SPIDER_IPC_API_EXPORT
@@ -220,8 +221,9 @@ namespace spider {
 		std::thread worker;
 		bool is_working;
 
-		std::vector<std::shared_ptr<Ivariable>> arguments;
-		std::vector<std::shared_ptr<Ivariable>> return_list;
+
+
+
 
 		bool is_complete;
 		bool is_args;
