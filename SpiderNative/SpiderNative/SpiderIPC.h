@@ -208,6 +208,33 @@ namespace spider {
 	};
 
 
+
+	// template specialized class
+	#undef native_type
+	#define native_type std::string
+	template <> class SPIDER_API variable<native_type> : public Ivariable {
+
+	private:
+		char* character_point;
+		unsigned int delay_time;
+		std::shared_ptr<spider_pimpl> pimpl;
+		unsigned int element_count;
+		spider::spider_access access;
+		std::string type_name;
+		std::string _name;
+		bool is_block;
+	public:
+		variable(std::string name, unsigned int element_cout, unsigned int delay, spider_mode mode = spider_mode::create, spider_access access = spider::spider_access::read_write);
+		~variable();
+		void operator=(native_type data);
+		void operator>>(native_type&);
+		spider::variable<native_type>& delay(unsigned int delay);
+		spider::variable<native_type>& block(bool enable);
+		std::string type() override;
+		std::string name() override;
+	};
+
+
 	
 
 
@@ -314,6 +341,13 @@ namespace spider {
 		template<> spider::function& push<native_type>(std::string name, native_type* value, unsigned int element_count);
 		template<> spider::function& get<native_type>(std::string name, native_type* value);
 		template<> spider::function& get<native_type>(std::string name, native_type* value, unsigned int element_count);
+
+		#undef native_type
+		#define native_type std::string
+		template<> spider::function& arg<native_type>(std::string name, unsigned int element_count);
+		template<> spider::function& ret<native_type>(std::string name, unsigned int element_count);
+		template<> spider::function& push<native_type>(std::string name, native_type value);
+		template<> spider::function& get<native_type>(std::string name, native_type* value);
 	};
 	
 };

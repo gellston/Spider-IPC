@@ -9,6 +9,8 @@ namespace console_test_server
     {
         static void Main(string[] args)
         {
+
+            
             SPIDER.Function notifier = new SPIDER.Function("test");
             notifier.Args()
                     .Arg<int>("argument1")

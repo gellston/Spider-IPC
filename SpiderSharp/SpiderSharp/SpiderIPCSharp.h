@@ -118,6 +118,10 @@ namespace SPIDER {
 					auto variable = new spider::variable<char>(_name, element_count, delay, _mode, _access);
 					this->_instance = variable;
 				}
+				else if (T::typeid == System::String::typeid) {
+					auto variable = new spider::variable<std::string>(_name, element_count, delay, _mode, _access);
+					this->_instance = variable;
+				}
 				else {
 					throw std::exception("Type not support");
 				}
@@ -200,6 +204,12 @@ namespace SPIDER {
 					auto temp = std::static_pointer_cast<spider::variable<char>>(this->_instance.get());
 					*temp.get() = safe_cast<char>(data);
 				}
+				else if (T::typeid == System::String::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<std::string>>(this->_instance.get());
+					System::String^ input_sharp_string = safe_cast<System::String^>(data);
+					std::string input_string = msclr::interop::marshal_as<std::string>(input_sharp_string);
+					*temp.get() = input_string;
+				}
 				else {
 					throw std::exception("Type not support");
 				}
@@ -244,6 +254,12 @@ namespace SPIDER {
 					*temp.get() >> value;
 
 					return value;
+				}
+				else if (T::typeid == System::String::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<std::string>>(this->_instance.get());
+					std::string return_string = "";
+					(*temp) >> return_string;
+					return gcnew System::String(return_string.c_str());
 				}
 				else {
 					throw std::exception("Type not support");
@@ -607,6 +623,9 @@ namespace SPIDER {
 				else if (T::typeid == System::SByte::typeid) {
 					this->_instance->arg<int>(_name, element_count);
 				}
+				else if (T::typeid == System::String::typeid) {
+					this->_instance->arg<std::string>(_name, element_count);
+				}
 				else {
 					throw std::exception("Type not support");
 				}
@@ -664,6 +683,9 @@ namespace SPIDER {
 				else if (T::typeid == System::SByte::typeid) {
 					this->_instance->ret<int>(_name, element_count);
 				}
+				else if (T::typeid == System::String::typeid) {
+					this->_instance->ret<std::string>(_name, element_count);
+				}
 				else {
 					throw std::exception("Type not support");
 				}
@@ -696,6 +718,11 @@ namespace SPIDER {
 				else if (T::typeid == System::SByte::typeid) {
 					char _value = safe_cast<char>(value);
 					this->_instance->push<char>(_name, _value);
+				}
+				else if (T::typeid == System::String::typeid) {
+					System::String^ input_sharp_string = safe_cast<System::String^>(value);
+					std::string temp = msclr::interop::marshal_as<std::string>(input_sharp_string);
+					this->_instance->push<std::string>(_name, temp);
 				}
 				else {
 					throw std::exception("Type not support");
@@ -821,6 +848,24 @@ namespace SPIDER {
 					unsigned char _value = 0;
 					this->_instance->get<unsigned char>(_name, &_value);
 					value = _value;
+				}
+				else {
+					throw std::exception("Type not support");
+				}
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew String(e.what()));
+			}
+			return this;
+		}
+		generic<typename T> Function^ Get(String^ name, [Out]System::String^% value) {
+
+			auto _name = msclr::interop::marshal_as<std::string>(name);
+			try {
+				if (T::typeid == System::String::typeid) {
+					std::string temp;
+					this->_instance->get<std::string>(_name, &temp);
+					value = gcnew System::String(temp.c_str());
 				}
 				else {
 					throw std::exception("Type not support");

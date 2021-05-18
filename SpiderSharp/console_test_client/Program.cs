@@ -9,6 +9,8 @@ namespace console_test_client
     {
         static void Main(string[] args)
         {
+
+            
             SPIDER.Function function = new SPIDER.Function("test", (function) =>
             {
                 try

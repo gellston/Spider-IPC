@@ -12,7 +12,7 @@ using std::chrono::milliseconds;
 /// </summary>
 /// 
 int main() {
-	
+
 	spider::function notifier("test");
 	notifier
 		.args()
@@ -44,7 +44,7 @@ int main() {
 			auto t2 = high_resolution_clock::now();
 			auto ms_int = duration_cast<milliseconds>(t2 - t1);
 
-			/* Getting number of milliseconds as a double. */
+
 			duration<double, std::milli> ms_double = t2 - t1;
 			if (ms_double.count() > 1000) {
 				
@@ -59,5 +59,7 @@ int main() {
 		}
 
 	}
+
+
 	return 0;
 }
