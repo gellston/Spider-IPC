@@ -1,6 +1,13 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Ask Me Anything !](https://img.shields.io/badge/Ask%20me-anything-1abc9c.svg)](https://github.com/gellston/gellston/issues)
-[![Generic badge](https://img.shields.io/badge/<Build>-<Pass>-<COLOR>.svg)](https://shields.io/)
+[![Generic badge](https://img.shields.io/badge/Build-Pass-green)](https://github.com/gellston/Spider-IPC/releases/tag/1.0)
+[![Generic badge](https://img.shields.io/badge/Visual%20Studio-2013-green)](https://github.com)
+[![Generic badge](https://img.shields.io/badge/Visual%20Studio-2019-green)](https://github.com)
+[![Generic badge](https://img.shields.io/badge/Linker-v120-green)](https://github.com)
+[![Generic badge](https://img.shields.io/badge/Linker-v142-green)](https://github.com)
+[![Generic badge](https://img.shields.io/badge/OS-Windows7-blue)](https://github.com)
+[![Generic badge](https://img.shields.io/badge/OS-Windows10-blue)](https://github.com)
+
 
 # Spider-IPC
 SPIDER-IPC is a C++/C# library that provides inter-process communication using shared memory on Windows <br>
@@ -10,10 +17,7 @@ This library provides remote function calls and variable sharing functions
 This library was developed and modified with Visual Studio 2019 <br>
 
 # Download
-[Download C++ v120-x86 version ](https://github.com/gellston/Spider-IPC/raw/main/lib/SpiderNative-x86-v120.zip)<br>
-[Download C++ v120-x64 version](https://github.com/gellston/Spider-IPC/raw/main/lib/SpiderNative-x64-v120.zip) <br>
-[Download C++ v142-x64-windows10 version](https://github.com/gellston/Spider-IPC/raw/main/lib/SpiderNative-x64-v142-windows10.zip) <br>
-[Download C# NetCore3.1-x64-windows10 version](https://github.com/gellston/Spider-IPC/raw/main/lib/SpiderSharp-x64-NetCore3.1-windows10.zip) <br>
+[https://github.com/gellston/Spider-IPC/releases/tag/1.0](https://github.com/gellston/Spider-IPC/releases/tag/1.0)
 
 
 # Getting Started 
