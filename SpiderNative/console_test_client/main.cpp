@@ -39,7 +39,7 @@ int main() {
 	while (true) {
 		getchar();
 	}
-
+	
 
 
 	return 0;

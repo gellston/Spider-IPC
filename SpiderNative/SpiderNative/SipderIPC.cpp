@@ -4081,7 +4081,7 @@ template<> spider::function& spider::function::arg<native_type>(std::string name
 		switch (mode)
 		{
 		case spider::subscriber: {
-			std::shared_ptr<spider::variable<std::string>> variable(new spider::variable<std::string>(type_name,element_count,100, spider::spider_mode::create, spider::spider_access::read_write));
+			std::shared_ptr<spider::variable<std::string>> variable(new spider::variable<std::string>(type_name,element_count, this->delay_value, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
 			this->pimpl->arguments[type_name] = temp;
@@ -4089,7 +4089,7 @@ template<> spider::function& spider::function::arg<native_type>(std::string name
 		}
 
 		case spider::notifier: {
-			std::shared_ptr<spider::variable<std::string>> variable(new spider::variable<std::string>(type_name, element_count, 100, spider::spider_mode::create, spider::spider_access::read_write));
+			std::shared_ptr<spider::variable<std::string>> variable(new spider::variable<std::string>(type_name, element_count, this->delay_value, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
 			this->pimpl->arguments[type_name] = temp;
@@ -4117,7 +4117,7 @@ template<> spider::function& spider::function::ret<native_type>(std::string name
 		switch (mode)
 		{
 		case spider::subscriber: {
-			std::shared_ptr<spider::variable<std::string>> variable(new spider::variable<std::string>(name,element_count,100, spider::spider_mode::create, spider::spider_access::read_write));
+			std::shared_ptr<spider::variable<std::string>> variable(new spider::variable<std::string>(name,element_count, this->delay_value, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
 			this->pimpl->return_list[type_name] = temp;
@@ -4125,7 +4125,7 @@ template<> spider::function& spider::function::ret<native_type>(std::string name
 		}
 
 		case spider::notifier: {
-			std::shared_ptr<spider::variable<std::string>> variable(new spider::variable<std::string>(name, element_count, 100, spider::spider_mode::create, spider::spider_access::read_write));
+			std::shared_ptr<spider::variable<std::string>> variable(new spider::variable<std::string>(name, element_count, this->delay_value, spider::spider_mode::create, spider::spider_access::read_write));
 			variable->block(false);
 			auto temp = std::static_pointer_cast<Ivariable>(variable);
 			this->pimpl->return_list[type_name] = temp;
@@ -4162,8 +4162,6 @@ template<> spider::function& spider::function::push<native_type>(std::string nam
 
 			std::string type_name = this->_name + "_";
 			type_name += name;
-
-
 			if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end()) {
 				auto variable = this->pimpl->arguments[type_name];
 				auto temp = std::static_pointer_cast<spider::variable<std::string>>(variable);

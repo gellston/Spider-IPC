@@ -10,7 +10,6 @@ namespace console_test_client
         static void Main(string[] args)
         {
 
-            
             SPIDER.Function function = new SPIDER.Function("test", (function) =>
             {
                 try
@@ -35,6 +34,7 @@ namespace console_test_client
                 .Returns()
                 .Ret<int>("returnValue")
                 .Complete();
+
             while (true)
             {
                 System.Threading.Thread.Sleep(100);

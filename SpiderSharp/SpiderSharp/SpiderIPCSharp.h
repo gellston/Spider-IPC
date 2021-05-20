@@ -403,8 +403,6 @@ namespace SPIDER {
 	private:
 
 
-		bool IsWorking;
-
 
 		FunctionTrace^ _functionTrace;
 		NativeFunctionTrace^ _nativeFunctionTrace;
@@ -430,17 +428,6 @@ namespace SPIDER {
 
 		}
 
-		//void ThreadLoop() {
-		//	while (this->IsWorking) {
-		//		try {
-		//			this->_functionTrace->Invoke(this);
-		//		}
-		//		catch (Exception^ e) {
-		//			Diagnostics::Debug::WriteLine(e->Message);
-		//		}
-		//		
-		//	}
-		//}
 
 	public:
 
@@ -467,9 +454,6 @@ namespace SPIDER {
 			try {
 				auto _name = msclr::interop::marshal_as<std::string>(name);
 
-
-				this->IsWorking = true;
-
 				this->_functionTrace = gcnew FunctionTrace(this, &SPIDER::Function::SharpCallback);
 				this->BlockGCHandleSharp = GCHandle::Alloc(this->_functionTrace);
 
@@ -492,11 +476,9 @@ namespace SPIDER {
 		}
 
 		~Function() {
-			this->IsWorking = false;
 	
 		}
 		!Function() {
-			this->IsWorking = false;
 		}
 
 		void Call() {

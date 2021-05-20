@@ -1,6 +1,7 @@
 ﻿#include "SpiderIPC.h"
 #include <iostream>
 #include <chrono>
+#include <string>
 
 using std::chrono::high_resolution_clock;
 using std::chrono::duration_cast;
@@ -13,6 +14,7 @@ using std::chrono::milliseconds;
 /// 
 int main() {
 
+	
 	spider::function notifier("test");
 	notifier
 		.args()
@@ -60,6 +62,6 @@ int main() {
 
 	}
 
-
+	
 	return 0;
 }
