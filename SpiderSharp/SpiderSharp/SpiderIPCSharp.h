@@ -77,6 +77,10 @@ namespace SPIDER {
 					auto variable = new spider::variable<char>(_name, _mode, _access);
 					this->_instance = variable;
 				}
+				else if (T::typeid == bool::typeid) {
+					auto variable = new spider::variable<bool>(_name, _mode, _access);
+					this->_instance = variable;
+				}
 				else {
 					throw std::exception("Type not support");
 				}
@@ -122,6 +126,10 @@ namespace SPIDER {
 					auto variable = new spider::variable<std::string>(_name, element_count, delay, _mode, _access);
 					this->_instance = variable;
 				}
+				else if (T::typeid == bool::typeid) {
+					auto variable = new spider::variable<bool>(_name, element_count, delay, _mode, _access);
+					this->_instance = variable;
+				}
 				else {
 					throw std::exception("Type not support");
 				}
@@ -161,6 +169,10 @@ namespace SPIDER {
 				}
 				else if (T::typeid == System::SByte::typeid) {
 					auto variable = new spider::variable<char>(_name, delay, _mode, _access);
+					this->_instance = variable;
+				}
+				else if (T::typeid == bool::typeid) {
+					auto variable = new spider::variable<bool>(_name, delay, _mode, _access);
 					this->_instance = variable;
 				}
 				else {
@@ -203,6 +215,10 @@ namespace SPIDER {
 				else if (T::typeid == System::SByte::typeid) {
 					auto temp = std::static_pointer_cast<spider::variable<char>>(this->_instance.get());
 					*temp.get() = safe_cast<char>(data);
+				}
+				else if (T::typeid == bool::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<bool>>(this->_instance.get());
+					*temp.get() = safe_cast<bool>(data);
 				}
 				else if (T::typeid == System::String::typeid) {
 					auto temp = std::static_pointer_cast<spider::variable<std::string>>(this->_instance.get());
@@ -255,6 +271,13 @@ namespace SPIDER {
 
 					return value;
 				}
+				else if (T::typeid == bool::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<bool>>(this->_instance.get());
+					bool value = 0;
+					*temp.get() >> value;
+
+					return value;
+				}
 				else if (T::typeid == System::String::typeid) {
 					auto temp = std::static_pointer_cast<spider::variable<std::string>>(this->_instance.get());
 					std::string return_string = "";
@@ -293,6 +316,10 @@ namespace SPIDER {
 					auto temp = std::static_pointer_cast<spider::variable<unsigned char>>(this->_instance.get());
 					temp->receive((unsigned char*)data.ToPointer(), element_count);
 				}
+				else if (T::typeid == System::Byte::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<bool>>(this->_instance.get());
+					temp->receive((bool*)data.ToPointer(), element_count);
+				}
 				else if (T::typeid == System::SByte::typeid) {
 					auto temp = std::static_pointer_cast<spider::variable<char>>(this->_instance.get());
 					temp->receive((char*)data.ToPointer(), element_count);
@@ -324,6 +351,10 @@ namespace SPIDER {
 					auto temp = std::static_pointer_cast<spider::variable<unsigned char>>(this->_instance.get());
 					temp->send((unsigned char*)data.ToPointer(), element_count);
 				}
+				else if (T::typeid == bool::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<bool>>(this->_instance.get());
+					temp->send((bool*)data.ToPointer(), element_count);
+				}
 				else if (T::typeid == System::SByte::typeid) {
 					auto temp = std::static_pointer_cast<spider::variable<char>>(this->_instance.get());
 					temp->send((char*)data.ToPointer(), element_count);
@@ -353,6 +384,10 @@ namespace SPIDER {
 				}
 				else if (T::typeid == System::Byte::typeid) {
 					auto temp = std::static_pointer_cast<spider::variable<unsigned char>>(this->_instance.get());
+					temp->block(enable);
+				}
+				else if (T::typeid == System::Byte::typeid) {
+					auto temp = std::static_pointer_cast<spider::variable<bool>>(this->_instance.get());
 					temp->block(enable);
 				}
 				else if (T::typeid == System::SByte::typeid) {

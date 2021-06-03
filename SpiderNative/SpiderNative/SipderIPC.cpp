@@ -1887,6 +1887,375 @@ spider::variable<native_type>& spider::variable<native_type>::send(native_type* 
 	return (*this);
 }
 
+
+
+// boole variable
+#undef native_type
+#define native_type bool
+spider::variable<native_type>::variable(std::string name, spider_mode mode, spider_access access) : instance(nullptr),
+																									pimpl(new spider_pimpl()),
+																									type_name(typeid(native_type).name()) {
+
+
+	if (name.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_") != std::string::npos)
+	{
+		throw std::exception("The name contains special characters.");
+	}
+
+	this->_name = name;
+
+	std::wstring unicode_name;
+	unicode_name.assign(name.begin(), name.end());
+
+
+	std::wstring unicode_write_event_name = unicode_name;
+	unicode_write_event_name += L"_write.event";
+
+	this->access = access;
+
+
+	this->pimpl->event_write_handle = CreateEvent(
+		NULL,               // default security attributes
+		TRUE,               // manual-reset event
+		TRUE,              // initial state is nonsignaled
+		unicode_write_event_name.c_str()  // object name
+	);
+
+	switch (mode)
+	{
+	case spider::create:
+		this->pimpl->shmem = ::CreateFileMapping(
+			INVALID_HANDLE_VALUE,
+			NULL,
+			PAGE_READWRITE,
+			0,
+			sizeof(native_type),
+			unicode_name.c_str());
+		break;
+	case spider::open:
+		this->pimpl->shmem = ::OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, unicode_name.c_str());
+		break;
+	default:
+		throw std::exception("Invalid mode");
+		break;
+	}
+
+	if (this->pimpl->shmem == nullptr)
+		throw std::exception("Invalid shared memory handle");
+
+	this->instance = (native_type*)::MapViewOfFile(this->pimpl->shmem, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(native_type));
+
+	if (this->instance == nullptr) {
+		CloseHandle(this->pimpl->shmem);
+		throw std::exception("Invalid memory pointer");
+	}
+
+
+	this->delay_time = 100;
+	this->element_count = 1;
+	this->is_block = true;
+}
+
+spider::variable<native_type>::variable(std::string name, unsigned int element_count, unsigned int delay, spider_mode mode, spider_access access) : instance(nullptr),
+pimpl(new spider_pimpl()),
+type_name(typeid(native_type).name()) {
+	if (name.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_") != std::string::npos)
+	{
+		throw std::exception("The name contains special characters.");
+	}
+
+	this->_name = name;
+
+	std::wstring unicode_name;
+	unicode_name.assign(name.begin(), name.end());
+
+
+	std::wstring unicode_write_event_name = unicode_name;
+	unicode_write_event_name += L"_write.event";
+
+	this->access = access;
+
+
+	this->pimpl->event_write_handle = CreateEvent(
+		NULL,               // default security attributes
+		TRUE,               // manual-reset event
+		TRUE,              // initial state is nonsignaled
+		unicode_write_event_name.c_str()  // object name
+	);
+
+	switch (mode)
+	{
+	case spider::create:
+		this->pimpl->shmem = ::CreateFileMapping(
+			INVALID_HANDLE_VALUE,
+			NULL,
+			PAGE_READWRITE,
+			0,
+			sizeof(native_type) * element_count,
+			unicode_name.c_str());
+		break;
+	case spider::open:
+		this->pimpl->shmem = ::OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, unicode_name.c_str());
+		break;
+	default:
+		throw std::exception("Invalid mode");
+		break;
+	}
+
+	if (this->pimpl->shmem == nullptr)
+		throw std::exception("Invalid shared memory handle");
+
+	this->instance = (native_type*)::MapViewOfFile(this->pimpl->shmem, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(native_type) * element_count);
+
+	if (this->instance == nullptr) {
+		CloseHandle(this->pimpl->shmem);
+		throw std::exception("Invalid memory pointer");
+	}
+
+	this->delay_time = delay;
+	this->element_count = element_count;
+	this->is_block = true;
+}
+
+spider::variable<native_type>::variable(std::string name, unsigned int delay, spider_mode mode, spider_access access) : instance(nullptr),
+pimpl(new spider_pimpl()),
+type_name(typeid(native_type).name()) {
+
+	if (name.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_") != std::string::npos)
+	{
+		throw std::exception("The name contains special characters.");
+	}
+
+	this->_name = name;
+
+	std::wstring unicode_name;
+	unicode_name.assign(name.begin(), name.end());
+
+
+	std::wstring unicode_write_event_name = unicode_name;
+	unicode_write_event_name += L"_write.event";
+
+	this->access = access;
+
+
+	this->pimpl->event_write_handle = CreateEvent(
+		NULL,               // default security attributes
+		TRUE,               // manual-reset event
+		TRUE,              // initial state is nonsignaled
+		unicode_write_event_name.c_str()  // object name
+	);
+
+	switch (mode)
+	{
+	case spider::create:
+		this->pimpl->shmem = ::CreateFileMapping(
+			INVALID_HANDLE_VALUE,
+			NULL,
+			PAGE_READWRITE,
+			0,
+			sizeof(native_type),
+			unicode_name.c_str());
+		break;
+	case spider::open:
+		this->pimpl->shmem = ::OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, unicode_name.c_str());
+		break;
+	default:
+		throw std::exception("Invalid mode");
+		break;
+	}
+
+	if (this->pimpl->shmem == nullptr)
+		throw std::exception("Invalid shared memory handle");
+
+	this->instance = (native_type*)::MapViewOfFile(this->pimpl->shmem, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(native_type));
+
+	if (this->instance == nullptr) {
+		CloseHandle(this->pimpl->shmem);
+		throw std::exception("Invalid memory pointer");
+	}
+
+	this->delay_time = delay;
+	this->element_count = 1;
+	this->is_block = true;
+}
+
+std::string spider::variable<native_type>::type() {
+	return this->type_name;
+}
+
+std::string spider::variable<native_type>::name() {
+	return this->_name;
+}
+
+spider::variable<native_type>::~variable() {
+	if (this->instance)
+		::UnmapViewOfFile(this->instance);
+	if (this->pimpl->shmem)
+		::CloseHandle(this->pimpl->shmem);
+	if (this->pimpl->event_write_handle)
+		CloseHandle(this->pimpl->event_write_handle);
+}
+
+
+spider::variable<native_type>& spider::variable<native_type>::block(bool is_block) {
+	this->is_block = is_block;
+
+	return *this;
+}
+
+void spider::variable<native_type>::operator=(native_type data) {
+
+	if (this->access == spider_access::read_only)
+		throw std::exception("Proteced memory");
+
+	if (this->is_block == true) {
+		spider_raii raii([&] {
+			SetEvent(this->pimpl->event_write_handle);
+			});
+
+		DWORD write_handle_ret = WaitForSingleObject(this->pimpl->event_write_handle, this->delay_time);
+		ResetEvent(this->pimpl->event_write_handle);
+
+		switch (write_handle_ret) {
+		case WAIT_OBJECT_0:
+			memcpy(this->instance, &data, sizeof(native_type));
+			break;
+		case WAIT_TIMEOUT:
+			throw std::exception("Time out");
+			break;
+		case WAIT_FAILED:
+			throw std::exception("Unexpected error");
+			break;
+		default:
+			break;
+		}
+	}
+	else {
+		memcpy(this->instance, &data, sizeof(native_type));
+	}
+
+}
+
+void spider::variable<native_type>::operator>>(native_type& data) {
+	if (this->is_block == true) {
+		DWORD write_handle_ret = WaitForSingleObject(this->pimpl->event_write_handle, this->delay_time);
+		native_type value = 0;
+		switch (write_handle_ret) {
+		case WAIT_OBJECT_0:
+			memcpy(&value, this->instance, sizeof(native_type));
+			data = value;
+			break;
+		case WAIT_TIMEOUT:
+			throw std::exception("Time out");
+			break;
+		case WAIT_FAILED:
+			throw std::exception("Unexpected error");
+			break;
+		default:
+			break;
+		}
+	}
+	else {
+		native_type value = 0;
+		memcpy(&value, this->instance, sizeof(native_type));
+		data = value;
+	}
+
+}
+
+spider::variable<native_type>& spider::variable<native_type>::delay(unsigned int delay) {
+	this->delay_time = delay;
+	return (*this);
+}
+
+spider::variable<native_type>& spider::variable<native_type>::receive(native_type* data, unsigned int element_count) {
+
+	if (this->is_block == true) {
+		DWORD write_handle_ret = WaitForSingleObject(this->pimpl->event_write_handle, this->delay_time);
+
+		unsigned int source_count = this->element_count;
+		unsigned int target_count = element_count;
+
+		switch (write_handle_ret) {
+		case WAIT_OBJECT_0:
+
+
+			if (source_count < target_count)
+				throw std::exception("Invalid size error");
+
+			memcpy(data, this->instance, sizeof(native_type) * element_count);
+			break;
+		case WAIT_TIMEOUT:
+			throw std::exception("Time out");
+			break;
+		case WAIT_FAILED:
+			throw std::exception("Unexpected error");
+			break;
+		default:
+			break;
+		}
+	}
+	else {
+		unsigned int source_count = this->element_count;
+		unsigned int target_count = element_count;
+		if (source_count < target_count)
+			throw std::exception("Invalid size error");
+
+		memcpy(data, this->instance, sizeof(native_type) * element_count);
+	}
+
+
+	return (*this);
+}
+
+spider::variable<native_type>& spider::variable<native_type>::send(native_type* data, unsigned int element_count) {
+
+	if (this->access == spider_access::read_only)
+		throw std::exception("Proected memory");
+
+
+	if (this->is_block == true) {
+		DWORD write_handle_ret = WaitForSingleObject(this->pimpl->event_write_handle, this->delay_time);
+
+		unsigned int source_count = this->element_count;
+		unsigned int target_count = element_count;
+
+		switch (write_handle_ret) {
+		case WAIT_OBJECT_0:
+
+
+			if (source_count < target_count)
+				throw std::exception("Invalid size error");
+
+			memcpy(this->instance, data, sizeof(native_type) * element_count);
+
+			break;
+		case WAIT_TIMEOUT:
+			throw std::exception("Time out");
+			break;
+		case WAIT_FAILED:
+			throw std::exception("Unexpected error");
+			break;
+		default:
+			break;
+		}
+	}
+	else {
+		unsigned int source_count = this->element_count;
+		unsigned int target_count = element_count;
+
+		if (source_count < target_count)
+			throw std::exception("Invalid size error");
+
+		memcpy(this->instance, data, sizeof(native_type) * element_count);
+	}
+
+
+	return (*this);
+}
+
+
+
 //////// Special std::string handling
 // Char variable
 #undef native_type
@@ -2039,6 +2408,10 @@ spider::variable<native_type>& spider::variable<native_type>::delay(unsigned int
 	this->delay_time = delay;
 	return (*this);
 }
+
+
+
+
 
 
 
@@ -2986,6 +3359,368 @@ template<> spider::function& spider::function::get<native_type>(std::string name
 	}
 	return *this;
 }
+
+
+
+#undef native_type
+#define native_type bool
+template<> spider::function& spider::function::arg<native_type>(std::string name) {
+	if (this->is_args == false) throw std::exception("Need args mode on");
+	if (this->is_complete == true) throw std::exception("Registration completed");
+	std::string type_name = this->_name + "_";
+	type_name += name;
+
+
+	if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end())
+		throw std::exception("Duplicate key");
+
+	try {
+		switch (mode)
+		{
+		case spider::subscriber: {
+			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
+			variable->block(false);
+			auto temp = std::static_pointer_cast<Ivariable>(variable);
+			this->pimpl->arguments[type_name] = temp;
+			break;
+		}
+
+		case spider::notifier: {
+			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
+			variable->block(false);
+			auto temp = std::static_pointer_cast<Ivariable>(variable);
+			this->pimpl->arguments[type_name] = temp;
+			break;
+		}
+
+		default:
+			break;
+		}
+
+	}
+	catch (std::exception e) {
+		throw e;
+	}
+
+	return *this;
+}
+template<> spider::function& spider::function::arg<native_type>(std::string name, unsigned int element_count) {
+	if (this->is_args == false) throw std::exception("Need args mode on");
+	if (this->is_complete == true) throw std::exception("Registration completed");
+	std::string type_name = this->_name + "_";
+	type_name += name;
+
+	if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end())
+		throw std::exception("Duplicate key");
+
+	try {
+		switch (mode)
+		{
+		case spider::subscriber: {
+			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, element_count, this->delay_value, spider::spider_mode::create, spider::spider_access::read_write));
+			variable->block(false);
+			auto temp = std::static_pointer_cast<Ivariable>(variable);
+			this->pimpl->arguments[type_name] = temp;
+			break;
+		}
+
+		case spider::notifier: {
+			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, element_count, this->delay_value, spider::spider_mode::create, spider::spider_access::read_write));
+			variable->block(false);
+			auto temp = std::static_pointer_cast<Ivariable>(variable);
+			this->pimpl->arguments[type_name] = temp;
+			break;
+		}
+
+		default:
+			break;
+		}
+	}
+	catch (std::exception e) {
+		throw e;
+	}
+
+	return *this;
+}
+template<> spider::function& spider::function::ret<native_type>(std::string name) {
+	if (this->is_returns == false) throw std::exception("Need return mode on");
+	if (this->is_complete == true) throw std::exception("Registration completed");
+	std::string type_name = this->_name + "_";
+	type_name += name;
+	if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end())
+		throw std::exception("Duplicate key");
+	try {
+		switch (mode)
+		{
+		case spider::subscriber: {
+			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
+			variable->block(false);
+			auto temp = std::static_pointer_cast<Ivariable>(variable);
+			this->pimpl->return_list[type_name] = temp;
+			break;
+		}
+
+		case spider::notifier: {
+			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(type_name, spider::spider_mode::create, spider::spider_access::read_write));
+			variable->block(false);
+			auto temp = std::static_pointer_cast<Ivariable>(variable);
+			this->pimpl->return_list[type_name] = temp;
+			break;
+		}
+
+		default:
+			break;
+		}
+	}
+	catch (std::exception e) {
+		throw e;
+	}
+
+	return *this;
+}
+template<> spider::function& spider::function::ret<native_type>(std::string name, unsigned int element_count) {
+	if (this->is_returns == false) throw std::exception("Need return mode on");
+	if (this->is_complete == true) throw std::exception("Registration completed");
+	std::string type_name = this->_name + "_";
+	type_name += name;
+	if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end())
+		throw std::exception("Duplicate key");
+	try {
+		switch (mode)
+		{
+		case spider::subscriber: {
+			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(name, element_count, this->delay_value, spider::spider_mode::create, spider::spider_access::read_write));
+			variable->block(false);
+			auto temp = std::static_pointer_cast<Ivariable>(variable);
+			this->pimpl->return_list[type_name] = temp;
+			break;
+		}
+
+		case spider::notifier: {
+			std::shared_ptr<spider::variable<native_type>> variable(new spider::variable<native_type>(name, element_count, this->delay_value, spider::spider_mode::create, spider::spider_access::read_write));
+			variable->block(false);
+			auto temp = std::static_pointer_cast<Ivariable>(variable);
+			this->pimpl->return_list[type_name] = temp;
+			break;
+		}
+
+		default:
+			break;
+		}
+	}
+	catch (std::exception e) {
+		throw e;
+	}
+
+	return *this;
+}
+template<> spider::function& spider::function::push<native_type>(std::string name, native_type value) {
+	if (this->is_args == true) {
+		try {
+			spider::spider_raii raii_bloacker([&]() {
+				ReleaseMutex(this->pimpl->function_blocker);
+				});
+			DWORD blocker_ret = WaitForSingleObject(this->pimpl->function_blocker, INFINITE);
+			switch (blocker_ret) {
+			case WAIT_OBJECT_0:
+				break;
+			case WAIT_TIMEOUT:
+				throw std::exception("Time out");
+				break;
+			case WAIT_FAILED:
+				throw std::exception("Unexpected error");
+				break;
+			default:
+				break;
+			}
+
+			std::string type_name = this->_name + "_";
+			type_name += name;
+
+
+			if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end()) {
+				auto variable = this->pimpl->arguments[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				(*temp.get()) = value;
+			}
+
+		}
+		catch (std::exception e) {
+			throw e;
+		}
+	}
+	else if (this->is_returns == true) {
+		try {
+			std::string type_name = this->_name + "_";
+			type_name += name;
+
+			if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end()) {
+				auto variable = this->pimpl->return_list[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				(*temp.get()) = value;
+			}
+		}
+		catch (std::exception e) {
+			throw e;
+		}
+	}
+
+
+	return *this;
+}
+template<> spider::function& spider::function::push<native_type>(std::string name, native_type* value, unsigned int element_count) {
+	if (this->is_args == true) {
+		try {
+			spider::spider_raii raii_bloacker([&]() {
+				ReleaseMutex(this->pimpl->function_blocker);
+				});
+			DWORD blocker_ret = WaitForSingleObject(this->pimpl->function_blocker, INFINITE);
+			switch (blocker_ret) {
+			case WAIT_OBJECT_0:
+				break;
+			case WAIT_TIMEOUT:
+				throw std::exception("Time out");
+				break;
+			case WAIT_FAILED:
+				throw std::exception("Unexpected error");
+				break;
+			default:
+				break;
+			}
+
+			std::string type_name = this->_name + "_";
+			type_name += name;
+
+			if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end()) {
+				auto variable = this->pimpl->arguments[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->send(value, element_count);
+			}
+		}
+		catch (std::exception e) {
+			throw e;
+		}
+	}
+	else if (this->is_returns == true) {
+		try {
+			std::string type_name = this->_name + "_";
+			type_name += name;
+
+			if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end()) {
+				auto variable = this->pimpl->return_list[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->send(value, element_count);
+			}
+		}
+		catch (std::exception e) {
+			throw e;
+		}
+	}
+
+
+	return *this;
+}
+
+template<> spider::function& spider::function::get<native_type>(std::string name, native_type* value) {
+	if (this->is_args == true) {
+		try {
+			std::string type_name = this->_name + "_";
+			type_name += name;
+			if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end()) {
+				auto variable = this->pimpl->arguments[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->receive(value, 1);
+			}
+		}
+		catch (std::exception e) {
+			throw e;
+		}
+	}
+	else if (this->is_returns == true) {
+		try {
+			spider::spider_raii raii_bloacker([&]() {
+				ReleaseMutex(this->pimpl->function_blocker);
+				});
+			DWORD blocker_ret = WaitForSingleObject(this->pimpl->function_blocker, INFINITE);
+			switch (blocker_ret) {
+			case WAIT_OBJECT_0:
+				break;
+			case WAIT_TIMEOUT:
+				throw std::exception("Time out");
+				break;
+			case WAIT_FAILED:
+				throw std::exception("Unexpected error");
+				break;
+			default:
+				break;
+			}
+
+			std::string type_name = this->_name + "_";
+			type_name += name;
+			if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end()) {
+				auto variable = this->pimpl->return_list[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->receive(value, 1);
+			}
+		}
+		catch (std::exception e) {
+			throw e;
+		}
+	}
+
+	return *this;
+}
+template<> spider::function& spider::function::get<native_type>(std::string name, native_type* value, unsigned int element_count) {
+	if (this->is_args == true) {
+		try {
+			std::string type_name = this->_name + "_";
+			type_name += name;
+			if (this->pimpl->arguments.find(type_name) != this->pimpl->arguments.end()) {
+				auto variable = this->pimpl->arguments[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->receive(value, element_count);
+			}
+		}
+		catch (std::exception e) {
+			throw e;
+		}
+
+	}
+	else if (this->is_returns == true) {
+		try {
+			spider::spider_raii raii_bloacker([&]() {
+				ReleaseMutex(this->pimpl->function_blocker);
+				});
+			DWORD blocker_ret = WaitForSingleObject(this->pimpl->function_blocker, INFINITE);
+			switch (blocker_ret) {
+			case WAIT_OBJECT_0:
+				break;
+			case WAIT_TIMEOUT:
+				throw std::exception("Time out");
+				break;
+			case WAIT_FAILED:
+				throw std::exception("Unexpected error");
+				break;
+			default:
+				break;
+			}
+
+			std::string type_name = this->_name + "_";
+			type_name += name;
+			if (this->pimpl->return_list.find(type_name) != this->pimpl->return_list.end()) {
+				auto variable = this->pimpl->return_list[type_name];
+				auto temp = std::static_pointer_cast<spider::variable<native_type>>(variable);
+				temp->receive(value, element_count);
+			}
+		}
+		catch (std::exception e) {
+			throw e;
+		}
+	}
+	return *this;
+}
+
+
 
 #undef native_type
 #define native_type int
