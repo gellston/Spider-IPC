@@ -34,6 +34,8 @@ Start with [C++](https://github.com/gellston/Spider-IPC/tree/main/SpiderNative) 
 ///
 int main() {
 
+
+    // how to use function
 	spider::function notifier("test");
 	notifier
 		.args()
@@ -73,6 +75,7 @@ int main() {
 /// 
 int main() {
 
+    // how to use function 
 	spider::function notifier("test", [&](spider::function* function) {
 		try {
 			int argument1 = 0;
@@ -117,6 +120,7 @@ namespace console_test_server
     {
         static void Main(string[] args)
         {
+            // how to use function 
             SPIDER.Function notifier = new SPIDER.Function("test");
             notifier.Args()
                     .Arg<int>("argument1")
@@ -157,6 +161,7 @@ namespace console_test_client
     {
         static void Main(string[] args)
         {
+            // how to use function 
             SPIDER.Function function = new SPIDER.Function("test", (function) =>
             {
                 try
