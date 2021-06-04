@@ -612,6 +612,9 @@ namespace SPIDER {
 				else if (T::typeid == System::SByte::typeid) {
 					this->_instance->arg<char>(_name);
 				}
+				else if (T::typeid == bool::typeid) {
+					this->_instance->arg<bool>(_name);
+				}
 				else {
 					throw std::exception("Type not support");
 				}
@@ -643,6 +646,9 @@ namespace SPIDER {
 				else if (T::typeid == System::String::typeid) {
 					this->_instance->arg<std::string>(_name, element_count);
 				}
+				else if (T::typeid == bool::typeid) {
+					this->_instance->arg<bool>(_name, element_count);
+				}
 				else {
 					throw std::exception("Type not support");
 				}
@@ -671,6 +677,9 @@ namespace SPIDER {
 				}
 				else if (T::typeid == System::SByte::typeid) {
 					this->_instance->ret<char>(_name);
+				}
+				else if (T::typeid == bool::typeid) {
+					this->_instance->ret<bool>(_name);
 				}
 				else {
 					throw std::exception("Type not support");
@@ -702,6 +711,9 @@ namespace SPIDER {
 				}
 				else if (T::typeid == System::String::typeid) {
 					this->_instance->ret<std::string>(_name, element_count);
+				}
+				else if (T::typeid == bool::typeid) {
+					this->_instance->ret<bool>(_name, element_count);
 				}
 				else {
 					throw std::exception("Type not support");
@@ -741,6 +753,10 @@ namespace SPIDER {
 					std::string temp = msclr::interop::marshal_as<std::string>(input_sharp_string);
 					this->_instance->push<std::string>(_name, temp);
 				}
+				else if (T::typeid == bool::typeid) {
+					bool _value = safe_cast<bool>(value);
+					this->_instance->push<bool>(_name, _value);
+				}
 				else {
 					throw std::exception("Type not support");
 				}
@@ -773,6 +789,10 @@ namespace SPIDER {
 				else if (T::typeid == System::SByte::typeid) {
 					auto _pointer = static_cast<char*>(pointer.ToPointer());
 					this->_instance->push<char>(_name, _pointer, element_count);
+				}
+				else if (T::typeid == bool::typeid) {
+					auto _pointer = static_cast<bool*>(pointer.ToPointer());
+					this->_instance->push<bool>(_name, _pointer, element_count);
 				}
 				else {
 					throw std::exception("Type not support");
@@ -875,6 +895,26 @@ namespace SPIDER {
 			}
 			return this;
 		}
+
+		generic<typename T> Function^ Get(String^ name, [Out]bool% value) {
+
+			auto _name = msclr::interop::marshal_as<std::string>(name);
+			try {
+				if (T::typeid == bool::typeid) {
+					bool _value = 0;
+					this->_instance->get<bool>(_name, &_value);
+					value = _value;
+				}
+				else {
+					throw std::exception("Type not support");
+				}
+			}
+			catch (std::exception e) {
+				throw gcnew Exception(gcnew String(e.what()));
+			}
+			return this;
+		}
+
 		generic<typename T> Function^ Get(String^ name, [Out]System::String^% value) {
 
 			auto _name = msclr::interop::marshal_as<std::string>(name);
@@ -916,6 +956,10 @@ namespace SPIDER {
 				else if (T::typeid == System::SByte::typeid) {
 					auto _pointer = static_cast<char*>(pointer.ToPointer());
 					this->_instance->get<char>(_name, _pointer, element_count);
+				}
+				else if (T::typeid == bool::typeid) {
+					auto _pointer = static_cast<bool*>(pointer.ToPointer());
+					this->_instance->get<bool>(_name, _pointer, element_count);
 				}
 				else {
 					throw std::exception("Type not support");
