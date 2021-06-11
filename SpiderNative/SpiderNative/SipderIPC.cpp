@@ -2518,6 +2518,8 @@ spider::function::function(std::string name, std::function<void(spider::function
 				DWORD write_handle_ret = WaitForSingleObject(this->pimpl->function_start_handle, INFINITE);
 				
 
+
+				// mutex
 				spider::spider_raii raii_bloacker([&]() {
 					ReleaseMutex(this->pimpl->function_blocker);
 				});
@@ -2534,7 +2536,7 @@ spider::function::function(std::string name, std::function<void(spider::function
 				default:
 					break;
 				}
-
+				// mutex
 			
 				
 				switch (write_handle_ret) {
@@ -2594,6 +2596,28 @@ void spider::function::operator() () {
 	default:
 		break;
 	}
+
+
+	// mutex
+	spider::spider_raii raii_bloacker([&]() {
+		ReleaseMutex(this->pimpl->function_blocker);
+		});
+	DWORD blocker_ret = WaitForSingleObject(this->pimpl->function_blocker, INFINITE);
+	switch (blocker_ret) {
+	case WAIT_OBJECT_0:
+		break;
+	case WAIT_TIMEOUT:
+		throw std::exception("Time out");
+		break;
+	case WAIT_FAILED:
+		throw std::exception("Unexpected error");
+		break;
+	default:
+		break;
+	}
+	// mutex
+
+
 }
 
 
