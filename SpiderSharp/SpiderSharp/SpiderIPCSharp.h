@@ -191,7 +191,7 @@ namespace SPIDER {
 			// Unmanaged 자원 해제 
 		}
 		!Variable() { //ummanaged 자원 해제 
-
+		
 		}
 
 		
@@ -512,9 +512,9 @@ namespace SPIDER {
 		}
 
 		~Function() {
-			//if (this->BlockGCHandleNative.IsAllocated == true) this->BlockGCHandleNative.Free();
-			//if (this->BlockGCHandleSharp.IsAllocated == true) this->BlockGCHandleSharp.Free();
-			//this->!Function();
+			if (this->BlockGCHandleNative.IsAllocated == true) this->BlockGCHandleNative.Free();
+			if (this->BlockGCHandleSharp.IsAllocated == true) this->BlockGCHandleSharp.Free();
+			
 		}
 		!Function() {
 			//this->_instance.Dispose();

@@ -1,6 +1,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Ask Me Anything !](https://img.shields.io/badge/Ask%20me-anything-1abc9c.svg)](https://github.com/gellston/gellston/issues)
-[![Generic badge](https://img.shields.io/badge/Build-Pass-green)](https://github.com/gellston/Spider-IPC/releases/tag/1.0)
+[![Generic badge](https://img.shields.io/badge/Build-Pass-green)](https://github.com/gellston/Spider-IPC/releases/tag/1.7)
 [![Generic badge](https://img.shields.io/badge/Visual%20Studio-2013-green)](https://github.com)
 [![Generic badge](https://img.shields.io/badge/Visual%20Studio-2019-green)](https://github.com)
 [![Generic badge](https://img.shields.io/badge/Linker-v120-green)](https://github.com)
@@ -17,7 +17,7 @@ This library provides remote function calls and variable sharing functions
 This library was developed and modified with Visual Studio 2019 <br>
 
 # Download
-[https://github.com/gellston/Spider-IPC/releases/tag/1.6](https://github.com/gellston/Spider-IPC/releases/tag/1.6)
+[https://github.com/gellston/Spider-IPC/releases/tag/1.7](https://github.com/gellston/Spider-IPC/releases/tag/1.7)
 
 
 # Getting Started 
