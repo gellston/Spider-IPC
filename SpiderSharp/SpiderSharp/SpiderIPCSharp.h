@@ -41,7 +41,7 @@ namespace SPIDER {
 
 	private:
 		mananged_shared_ptr<spider::Ivariable> _instance;
-
+		bool _is_disposed;
 
 	public:
 
@@ -52,7 +52,7 @@ namespace SPIDER {
 			std::string _name = msclr::interop::marshal_as<std::string>(name);
 			spider::spider_mode _mode = static_cast<spider::spider_mode>(mode);
 			spider::spider_access _access = static_cast<spider::spider_access>(access);
-
+			_is_disposed = false;
 
 			try {
 				if (T::typeid == System::Int32::typeid) {
@@ -97,7 +97,7 @@ namespace SPIDER {
 			std::string _name = msclr::interop::marshal_as<std::string>(name);
 			spider::spider_mode _mode = static_cast<spider::spider_mode>(mode);
 			spider::spider_access _access = static_cast<spider::spider_access>(access);
-
+			_is_disposed = false;
 
 			try {
 				if (T::typeid == System::Int32::typeid) {
@@ -146,7 +146,7 @@ namespace SPIDER {
 			std::string _name = msclr::interop::marshal_as<std::string>(name);
 			spider::spider_mode _mode = static_cast<spider::spider_mode>(mode);
 			spider::spider_access _access = static_cast<spider::spider_access>(access);
-
+			_is_disposed = false;
 
 			try {
 				if (T::typeid == System::Int32::typeid) {
@@ -186,10 +186,11 @@ namespace SPIDER {
 
 		}
 		
-		~Variable() {
-
+		~Variable() { 
+			// Managed 자원 해제 
+			// Unmanaged 자원 해제 
 		}
-		!Variable() {
+		!Variable() { //ummanaged 자원 해제 
 
 		}
 
@@ -511,9 +512,12 @@ namespace SPIDER {
 		}
 
 		~Function() {
-	
+			//if (this->BlockGCHandleNative.IsAllocated == true) this->BlockGCHandleNative.Free();
+			//if (this->BlockGCHandleSharp.IsAllocated == true) this->BlockGCHandleSharp.Free();
+			//this->!Function();
 		}
 		!Function() {
+			//this->_instance.Dispose();
 		}
 
 		void Call() {
