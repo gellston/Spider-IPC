@@ -17,7 +17,7 @@ This library provides remote function calls and variable sharing functions
 This library was developed and modified with Visual Studio 2019 <br>
 
 # Download
-[https://github.com/gellston/Spider-IPC/releases/tag/1.5](https://github.com/gellston/Spider-IPC/releases/tag/1.5)
+[https://github.com/gellston/Spider-IPC/releases/tag/1.6](https://github.com/gellston/Spider-IPC/releases/tag/1.6)
 
 
 # Getting Started 
