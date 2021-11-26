@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": "netcoreapp3.1",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    "netcoreapp3.1": {
+      "SpiderSharp/1.0.0": {
+        "runtime": {
+          "SpiderSharp.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "SpiderSharp/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
